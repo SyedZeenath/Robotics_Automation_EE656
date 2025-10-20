@@ -1,0 +1,37 @@
+[0.303s] Invoking command in '/home/master26/assignment_1/src/rx200_moveit_control': PYTHONPATH=/home/master26/assignment_1/build/rx200_moveit_control/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/master26/assignment_1/install/rx200_moveit_control/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/rx200_moveit_control build --build-base /home/master26/assignment_1/build/rx200_moveit_control/build install --record /home/master26/assignment_1/build/rx200_moveit_control/install.log --single-version-externally-managed install_data
+[0.416s] running egg_info
+[0.417s] creating ../../build/rx200_moveit_control/rx200_moveit_control.egg-info
+[0.417s] writing ../../build/rx200_moveit_control/rx200_moveit_control.egg-info/PKG-INFO
+[0.417s] writing dependency_links to ../../build/rx200_moveit_control/rx200_moveit_control.egg-info/dependency_links.txt
+[0.417s] writing entry points to ../../build/rx200_moveit_control/rx200_moveit_control.egg-info/entry_points.txt
+[0.417s] writing requirements to ../../build/rx200_moveit_control/rx200_moveit_control.egg-info/requires.txt
+[0.417s] writing top-level names to ../../build/rx200_moveit_control/rx200_moveit_control.egg-info/top_level.txt
+[0.417s] writing manifest file '../../build/rx200_moveit_control/rx200_moveit_control.egg-info/SOURCES.txt'
+[0.418s] reading manifest file '../../build/rx200_moveit_control/rx200_moveit_control.egg-info/SOURCES.txt'
+[0.418s] writing manifest file '../../build/rx200_moveit_control/rx200_moveit_control.egg-info/SOURCES.txt'
+[0.418s] running build
+[0.418s] running build_py
+[0.418s] creating /home/master26/assignment_1/build/rx200_moveit_control/build
+[0.418s] creating /home/master26/assignment_1/build/rx200_moveit_control/build/lib
+[0.418s] creating /home/master26/assignment_1/build/rx200_moveit_control/build/lib/rx200_moveit_control
+[0.418s] copying rx200_moveit_control/rx200_moveit_action_client.py -> /home/master26/assignment_1/build/rx200_moveit_control/build/lib/rx200_moveit_control
+[0.418s] copying rx200_moveit_control/__init__.py -> /home/master26/assignment_1/build/rx200_moveit_control/build/lib/rx200_moveit_control
+[0.418s] running install
+[0.418s] running install_lib
+[0.419s] creating /home/master26/assignment_1/install/rx200_moveit_control/lib/python3.10/site-packages/rx200_moveit_control
+[0.419s] copying /home/master26/assignment_1/build/rx200_moveit_control/build/lib/rx200_moveit_control/rx200_moveit_action_client.py -> /home/master26/assignment_1/install/rx200_moveit_control/lib/python3.10/site-packages/rx200_moveit_control
+[0.419s] copying /home/master26/assignment_1/build/rx200_moveit_control/build/lib/rx200_moveit_control/__init__.py -> /home/master26/assignment_1/install/rx200_moveit_control/lib/python3.10/site-packages/rx200_moveit_control
+[0.419s] byte-compiling /home/master26/assignment_1/install/rx200_moveit_control/lib/python3.10/site-packages/rx200_moveit_control/rx200_moveit_action_client.py to rx200_moveit_action_client.cpython-310.pyc
+[0.419s] byte-compiling /home/master26/assignment_1/install/rx200_moveit_control/lib/python3.10/site-packages/rx200_moveit_control/__init__.py to __init__.cpython-310.pyc
+[0.420s] running install_data
+[0.420s] creating /home/master26/assignment_1/install/rx200_moveit_control/share/ament_index
+[0.420s] creating /home/master26/assignment_1/install/rx200_moveit_control/share/ament_index/resource_index
+[0.420s] creating /home/master26/assignment_1/install/rx200_moveit_control/share/ament_index/resource_index/packages
+[0.420s] copying resource/rx200_moveit_control -> /home/master26/assignment_1/install/rx200_moveit_control/share/ament_index/resource_index/packages
+[0.420s] copying package.xml -> /home/master26/assignment_1/install/rx200_moveit_control/share/rx200_moveit_control
+[0.420s] running install_egg_info
+[0.421s] Copying ../../build/rx200_moveit_control/rx200_moveit_control.egg-info to /home/master26/assignment_1/install/rx200_moveit_control/lib/python3.10/site-packages/rx200_moveit_control-0.0.1-py3.10.egg-info
+[0.421s] running install_scripts
+[0.431s] Installing rx200_moveit_client script to /home/master26/assignment_1/install/rx200_moveit_control/lib/rx200_moveit_control
+[0.431s] writing list of installed files to '/home/master26/assignment_1/build/rx200_moveit_control/install.log'
+[0.441s] Invoked command in '/home/master26/assignment_1/src/rx200_moveit_control' returned '0': PYTHONPATH=/home/master26/assignment_1/build/rx200_moveit_control/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/master26/assignment_1/install/rx200_moveit_control/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/rx200_moveit_control build --build-base /home/master26/assignment_1/build/rx200_moveit_control/build install --record /home/master26/assignment_1/build/rx200_moveit_control/install.log --single-version-externally-managed install_data
