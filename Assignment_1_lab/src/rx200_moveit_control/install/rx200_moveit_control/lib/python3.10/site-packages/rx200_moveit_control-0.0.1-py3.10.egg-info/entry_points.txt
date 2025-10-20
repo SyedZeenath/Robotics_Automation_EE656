@@ -1,3 +1,0 @@
-[console_scripts]
-rx200_moveit_client = rx200_moveit_control.rx200_moveit_action_client:main
-
