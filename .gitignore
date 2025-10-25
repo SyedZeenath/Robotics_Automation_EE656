@@ -1,0 +1,40 @@
+# Ignore common build/install/log directories
+build/
+build-*/
+_install/
+install/
+install-*/
+log/
+logs/
+*.log
+# Ignore same-named directories anywhere (including nested contents)
+**/build/**
+**/build-*/**
+**/_install/**
+**/install/**
+**/install-*/**
+**/log/**
+**/logs/**
+# Common development / temp files
+__pycache__/
+*.py[cod]
+*.pyo
+*.swp
+*~
+.DS_Store
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# CMake / build system artifacts
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Binary/object files
+*.o
+*.a
+*.so
+*.exe
