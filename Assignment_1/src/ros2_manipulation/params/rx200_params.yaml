@@ -1,0 +1,8 @@
+rx200_pick_place:
+  ros__parameters:
+    start_state_gripper: false
+    point_a: [0.45, 0.0, 0.0]
+    point_b: [0.45, 0.05, 0.0]
+    point_c: [-0.45, 0.05, 0.0]
+    point_d: [-0.45, 0.0, 0.0]
+    timeout_sec: 60.0
