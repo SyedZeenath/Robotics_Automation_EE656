@@ -14,6 +14,9 @@ Project root
         - Typical contents:
           - ROS2 nodes (Python) for planning and execution
           - launch files (.py) to start MoveIt and robot controllers
+      - robot_bringup/
+        - Description: Launch file to run the code.
+        - Purpose: Can be used to run along with any additional arguments passed through command line.
   - Command used to run: 
   ```bash 
   ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=rx200 hardware_type:=actual
@@ -38,6 +41,9 @@ Project root
           - grasping/IK utilities and end-effector control
           - sample configuration files (YAML/JSON) with fixed poses used for testing
           - launch files and README describing how to run the demo
+      - robot_launch/
+        - Description: Launch file to run the code.
+        - Purpose: Can be used to run along with any additional arguments passed through command line.
     - scripts: helper scripts for build, test and demos
     - docs/ (optional): design notes, diagrams, experiment logs
 
