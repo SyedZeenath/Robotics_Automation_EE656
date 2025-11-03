@@ -13,6 +13,11 @@ def generate_launch_description():
             LaunchConfiguration('params_file')
         ]
     )
+    
+    command_node = Node(
+        package='ros2_manipulation',
+        executable='pick_place_command'
+    )
 
     params_file = DeclareLaunchArgument(
         'params_file',
@@ -23,5 +28,6 @@ def generate_launch_description():
     ld.add_action(params_file)
 
     ld.add_action(moveit_control)
+    ld.add_action(command_node)
 
     return ld
