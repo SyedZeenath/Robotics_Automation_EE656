@@ -13,6 +13,8 @@
         - place pose - Can be passed through the rx200_params.yaml file 
         - Two intermediate points are defined - one for picking *above_pick* and one for placing *above_place*. These points are calculated by adding a fixed threshold value to the y-coordinate of both the pick and place positions. This added value represents the lift height, showing how much the arm raises the object, since the z-axis is not used in this case.
         - a constant z value is defined to avoid ground collision
+        - pitch is included based on the euclidean distance of arm from the base, if distance is too less(which is 0.2) then the arm points downwards, to avoid collision to the base.
+        - yaw is the tan-1(y/x) gives angle between x-axis and line joining origin to point (x,y), stating how much the end-effector should rotate to face the point (x,y)
 
 - Sequence followed:
 
