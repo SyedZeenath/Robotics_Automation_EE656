@@ -13,6 +13,11 @@ class PickPlaceCommand(Node):
         self.get_logger().info('Timer node is initialized')
         
     def timer_callback(self):
+        '''
+        This method triggers every 5seconds. It passes the state/position of the arm.
+        The state is currently fixed to be 8 states the arm moves from pick point to place point, including the open 
+        and close of the gripper. So, we end the sequence once the state hits 9. 
+        '''
         msg = Int32()
         msg.data = self.state
         self.pub_command.publish(msg)
@@ -20,9 +25,8 @@ class PickPlaceCommand(Node):
         self.state += 1
         if self.state == 9: 
             self.get_logger().info("PICK-AND-PLACE COMPLETE")
-            #need to work on this yet, not working right now
-            self.destroy_node()  # Destroy the node to prevent further execution
-            rclpy.shutdown()
+            self.state = 0
+
     
 def main():
     rclpy.init()

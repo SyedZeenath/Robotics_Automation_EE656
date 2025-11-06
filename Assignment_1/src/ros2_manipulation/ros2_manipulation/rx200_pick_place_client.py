@@ -6,7 +6,6 @@ from moveit_msgs.action import MoveGroup
 from moveit_msgs.msg import MotionPlanRequest, Constraints, PositionConstraint, OrientationConstraint, JointConstraint
 from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import PoseStamped, Quaternion, Point
-import time
 import math
 from transforms3d.euler import euler2quat
 from std_msgs.msg import Int32
@@ -29,11 +28,14 @@ class MoveItEEClient(Node):
         self.declare_parameter('start_state_gripper', value=True)
         self.declare_parameter('pick_point', value=[0.1, 0.0])
         self.declare_parameter('place_point', value=[0.1, 0.12])
+        self.declare_parameter('object_height', value=0.2)
  
         self.send_gr_pose(self.get_parameter('start_state_gripper').value)
         self._pick_point = tuple(self.get_parameter('pick_point').value)
         self._place_point = tuple(self.get_parameter('place_point').value)
+        self._object_height = self.get_parameter('object_height').value
         
+        # subscription to the commanding node to get the state/position of the arm
         self.command_sub = self.create_subscription(Int32, '/pick_place_command', self.command_callback, 10)
         # State tracking
         self.current_state = 0
@@ -47,8 +49,8 @@ class MoveItEEClient(Node):
         pose.pose.position.z = z
         
         distance = math.sqrt(x**2 + y**2)  # Horizontal distance from base
-        # pitch is descided based on how close we are to the object and how low it is
-        if distance <= 0.2:
+        # pitch is decided based on how close we are to the object and how low it is
+        if distance < 0.2:
             pitch = math.pi / 2  # Pointing downwards
         else:
             pitch = 0.0  # Level orientation
@@ -98,7 +100,6 @@ class MoveItEEClient(Node):
         send_future = self._client.send_goal_async(goal, feedback_callback=self._feedback_cb)
         send_future.add_done_callback(self._goal_response_cb)
 
-
     def send_gr_pose(self, open=True):
         req = MotionPlanRequest()
         req.group_name = self.group_name_gripper
@@ -107,7 +108,7 @@ class MoveItEEClient(Node):
 
         jc = JointConstraint()
         jc.joint_name = self.gripper_joint
-        jc.position = 0.0 if open else 0.035
+        jc.position = 0.035 if open else 0.0
         jc.tolerance_above = 0.01
         jc.tolerance_below = 0.01
         jc.weight = 1.0
@@ -123,9 +124,6 @@ class MoveItEEClient(Node):
 
         send_future = self._client.send_goal_async(goal)
         send_future.add_done_callback(self._goal_response_cb)
-
-        # Return the send future to allow optional synchronous waiting by the caller
-        return send_future
 
     # Callbacks 
     def _goal_response_cb(self, future):
@@ -154,13 +152,13 @@ class MoveItEEClient(Node):
                 self.run()
             elif self.current_state == 9:
                 self.get_logger().info("PICK-AND-PLACE COMPLETE")
+
                 
     # === Movement Sequence ===
     def run(self):
-        # Check if the target is within reach
         x, y = self._pick_point
-        z = 0.1  # Fixed height as threshold to avoid ground collision
-        lift_height = 0.15 if y > 0 else -0.15
+        z = self._object_height  # height, any object to be lifted from
+        lift_height = 0.1 # fixing it to one step above the object position
         distance = math.sqrt(x**2 + y**2)  # Horizontal distance from base
         if distance > 0.45 or distance < 0.1 or z < 0.05:
             self.get_logger().error(f"Target ({x}, {y}, {z}) is unreachable: "
@@ -172,56 +170,44 @@ class MoveItEEClient(Node):
             before_pick = Point(x=round(self._pick_point[0] - 0.1, 2), y=self._pick_point[1], z=z)
             self.get_logger().info(f"Moving before PICK point: {before_pick}")
             self.send_pose(before_pick.x, before_pick.y, before_pick.z)
-            # self.get_clock().sleep_for(rclpy.duration.Duration(seconds=1.0))
         elif self.current_state == 2:                                                   
         # 2. Move to Pick point
             pick_point = Point(x=self._pick_point[0], y=self._pick_point[1], z=z)
             self.get_logger().info(f"MOVING TO PICK point: {pick_point}")
             self.send_pose(pick_point.x, pick_point.y, pick_point.z)
-            # self.get_clock().sleep_for(rclpy.duration.Duration(seconds=2.0))
         elif self.current_state == 3:  
             # 3. Close gripper: hold the object
             self.get_logger().info("CLOSING GRIPPER")
-            self.send_gr_pose(open=True)
-            # self.get_clock().sleep_for(rclpy.duration.Duration(seconds=2.0))
+            self.send_gr_pose(open=False)
         elif self.current_state == 4:  
             # 4. Lift
-            above_pick = Point(x=self._pick_point[0], y=round(self._pick_point[1] + lift_height, 2), z=z)
+            above_pick = Point(x=self._pick_point[0], y=self._pick_point[1], z= round(z + lift_height,2))
             self.get_logger().info(f"LIFTING: {above_pick}")
             self.send_pose(above_pick.x, above_pick.y, above_pick.z)
-            # self.get_clock().sleep_for(rclpy.duration.Duration(seconds=2.0))
         elif self.current_state == 5:  
-            # 5. Above Place point, lift_height indicate a random lifting height, since z is not used
-            above_place = Point(x=self._place_point[0], y=round(self._place_point[1] + lift_height, 2), z=z)
+            # 5. Go above Place point
+            above_place = Point(x=self._place_point[0], y=self._place_point[1], z=round(z+ lift_height, 2))
             self.get_logger().info(f"Moving ABOVE PLACE point: {above_place}")
             self.send_pose(above_place.x, above_place.y, above_place.z)
-            # self.get_clock().sleep_for(rclpy.duration.Duration(seconds=2.0))
         elif self.current_state == 6:  
             # 6. Descend to Place
             place_point = Point(x=self._place_point[0], y=self._place_point[1], z=z)
             self.get_logger().info(f"DESCENDING TO PLACE point: {place_point}")
             self.send_pose(place_point.x, place_point.y, place_point.z)
-            # self.get_clock().sleep_for(rclpy.duration.Duration(seconds=2.0))
         elif self.current_state == 7:  
             # 7. Open gripper: release the object
             self.get_logger().info("OPENING GRIPPER")
-            self.send_gr_pose(open=False)
-            # self.get_clock().sleep_for(rclpy.duration.Duration(seconds=1.0))
+            self.send_gr_pose(open=True)
         elif self.current_state == 8:  
             # 8. Lift: Back to above place            
-            above_place = Point(x=self._place_point[0], y=round(self._place_point[1] + lift_height, 2), z=z)
+            above_place = Point(x=self._place_point[0], y=self._place_point[1], z=round(z+ lift_height, 2))
             self.get_logger().info(f"LIFTING {above_place}")
-            self.send_pose(above_place.x, above_place.y, above_place.z)
-            # self.get_clock().sleep_for(rclpy.duration.Duration(seconds=2.0))       
-        
-        # self.get_logger().info("PICK-AND-PLACE COMPLETE")          
-        # self.get_clock().sleep_for(rclpy.duration.Duration(seconds=5.0))
+            self.send_pose(above_place.x, above_place.y, above_place.z)  
 
 def main():
     rclpy.init()
     node = MoveItEEClient()   
     try:
-        # node.run()  
         rclpy.spin(node)          
     except KeyboardInterrupt:
         node.get_logger().info('Interrupted by user, shutting down')

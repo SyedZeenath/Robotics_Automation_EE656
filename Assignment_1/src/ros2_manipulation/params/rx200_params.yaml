@@ -1,5 +1,6 @@
 rx200_pick_place:
   ros__parameters:
-    start_state_gripper: false
+    start_state_gripper: True
     pick_point: [0.3, -0.2]
-    place_point: [0.2, 0.2]
+    place_point: [-0.2, -0.2]
+    object_height: 0.1
