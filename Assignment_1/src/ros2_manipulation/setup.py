@@ -24,6 +24,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'rx200_pick_place=ros2_manipulation.rx200_pick_place_client:main',
+            'pick_place_command=ros2_manipulation.rx200_pick_place_command:main'
         ],
     },
 )
