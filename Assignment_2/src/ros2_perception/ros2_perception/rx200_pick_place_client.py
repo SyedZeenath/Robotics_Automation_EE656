@@ -9,7 +9,7 @@ from geometry_msgs.msg import PoseStamped, Quaternion, Point
 import time
 import math
 from transforms3d.euler import euler2quat
-from std_msgs.msg import Int32
+from std_msgs.msg import String
 
 import json
 

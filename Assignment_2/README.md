@@ -14,7 +14,7 @@
  ```
 Command to run the application:
 ```bash
-To be updated
+ ros2 launch robot_launch control_only.launch.py params_file:=$(pwd)/src/ros2_perception/params/rx200_params.yaml
 ```
 Note: params_file is the location where the params file is located. Either give a full path or go to the 'Assignment_2' folder and copy the command as shown above
 
@@ -26,8 +26,8 @@ ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=rx200 ha
 ## Folder Structure:
 - Assignment-2:
     - src/
-      - ros2_manipulation/ros2_manipulation
-        - Description: Assignment demonstrating a ROS2 manipulation (pick & place) - 
+      - ros2_perception/ros2_perception
+        - Description: Assignment demonstrating a ROS2 perception (pick & place) - 
 
 ## Params file
 

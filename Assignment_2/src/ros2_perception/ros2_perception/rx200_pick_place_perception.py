@@ -5,7 +5,6 @@ from std_msgs.msg import String
 
 import json
 
-from interbotix_perception_modules.armtag import InterbotixArmTagInterface
 from interbotix_perception_modules.pointcloud import InterbotixPointCloudInterface
 
 class PickPlacePerception(Node):
@@ -13,10 +12,18 @@ class PickPlacePerception(Node):
         super().__init__('rx200_pick_place_perception')
         self.base_link = 'rx200/base_link'
         REF_FRAME = 'camera_color_optical_frame'
-        ARM_TAG_FRAME = 'camera_color_optical_frame'  # Since camera is on EE
+        ARM_TAG_FRAME = 'camera_color_optical_frame'
+        self.get_logger().info(f"Perception Node Initialised")
+        # self.bridge = CvBridge()
         
         self.pub = self.create_publisher(String, '/detected_blocks', 10)
         
+        # Subscribe to RealSense RGB and PointCloud
+        # self.create_subscription(Image, "/camera/color/image_raw", self.image_callback, 10)
+        # self.create_subscription(PointCloud2, "/camera/depth/color/points", self.pcl_callback, 10)
+
+        # self.last_image = None
+        # self.last_cloud = None
         # Getting armTag and pointcloud interfaces - TO DO: to use without AprilTag
         self.pcl = InterbotixPointCloudInterface(
             node_inf=self,
@@ -25,7 +32,13 @@ class PickPlacePerception(Node):
         # Since camera is on end-effector, and the static transform is already publsihed
         # this interface might not be required.
         
-        #TODO: Test it out
+    def image_callback(self, msg):
+        self.last_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+        self.process()
+
+    def pcl_callback(self, msg):
+        self.last_cloud = msg
+        self.process()
         
         # self.armtag = InterbotixArmTagInterface(
         #     ref_frame=REF_FRAME,
@@ -54,13 +67,9 @@ class PickPlacePerception(Node):
     def detect_blocks(self):
         # Get the arm pose 
         # self.armtag.find_ref_to_arm_base_transform()
-        
+        img = self.last_image
         # get the pointcloud clusters to detect blocks
-        clusters = self.pcl.get_cluster_positions(
-            ref_frame=self.base_link,
-            sort_axis='x',
-            reverse=True
-        )        
+        objects = self.perception.get_cluster_positions()        
         # Create a dictionary to hold detected block positions by color
         detected_blocks = {}
         for cluster in clusters:
