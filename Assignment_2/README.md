@@ -22,15 +22,27 @@ Command to run the Rviz('fake' is used here to see the simulation, update to act
 ```bash
 ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=rx200 hardware_type:=actual
 ```
+(To be edited later: temp perception command put up here)
+```bash
+ros2 launch interbotix_xsarm_perception xsarm_perception.launch.py robot_model:=rx200
+```
 
 ## Folder Structure:
 - Assignment-2:
     - src/
       - ros2_perception/ros2_perception
-        - Description: Assignment demonstrating a ROS2 perception (pick & place) - 
+        - Description: Assignment demonstrating a pick & place with perception - 
+      - ros2_perception/params/rx200_params.yaml
+        - The file to modify the positions and other parameters passed into the application.
+      - robot_launch/
+        - Description: Launch file to run the code.
+        - Purpose: Can be used to run along with any additional arguments passed through command line.
 
 ## Params file
 
+This file takes one parameter.
+
+- pick_order: An array containing the order of colors to be picked and stacked.
 
 
 ## Team Members
