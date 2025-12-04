@@ -31,7 +31,7 @@ class PickPlacePerception(Node):
         
         self.get_logger().info(f"Perception Node Initialised")        
 
-    def get_cluster_positions(self) -> Tuple[bool, Union[None, List[dict]]]:
+    def get_cluster_positions(self):
         """
         Get the estimated positions of all pointcloud clusters.
         """
@@ -39,8 +39,8 @@ class PickPlacePerception(Node):
         clusters = self.srv_get_cluster_positions.call_async(
             ClusterInfoArray.Request()
         )
-        self.node_inf.wait_until_future_complete(future_get_cluster_pos)
-        clusters = future_get_cluster_pos.result().clusters
+        self.wait_until_future_complete(clusters)
+        clusters = clusters.result().clusters
         if len(clusters) == 0:
             self.get_logger().warning('No clusters found...')
             return False, []
@@ -61,7 +61,7 @@ class PickPlacePerception(Node):
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException
         ):
-            self.node_inf.logerror(
+            self.get_logger().error(
                 f"Failed to look up the transform from '{ref_frame}' to '{cluster_frame}'."
             )
             return False, []
@@ -89,7 +89,7 @@ class PickPlacePerception(Node):
 
         return True, transformed_clusters
 
-    def pose_to_matrix(self, pose: List[float]) -> np.ndarray:
+    def pose_to_matrix(self, pose):
         mat = np.identity(4)
         theta = pose[3:]
         mat[:3, :3] = euler_matrix(theta[0], theta[1], theta[2], axes='sxyz')[:3, :3]
