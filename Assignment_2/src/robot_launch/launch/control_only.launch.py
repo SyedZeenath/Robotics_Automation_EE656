@@ -9,20 +9,15 @@ import os
 def generate_launch_description():
     ld = LaunchDescription()
     
-    #TODO: Need to fix the loading of urdf from external file
-    # Path to your external URDF/XACRO
-    external_urdf = '/home/zeenath/Robotics_Automation_EE656/Assignment_2/src/ros2_perception/robot_urdf/urdf/rx200.urdf.xacro'
-    
+
     # Path to Interbotix perception and moveit launch files
     perception_pkg_share = get_package_share_directory('interbotix_xsarm_perception')
     moveit_pkg_share = get_package_share_directory('interbotix_xsarm_moveit')
-    robot_urdf_pkg_path = get_package_share_directory('interbotix_xsarm_descriptions')
-    
-    description_launch_path = os.path.join(robot_urdf_pkg_path, 'launch', 'xsarm_description.launch.py')
+    custom_arm_description_share = get_package_share_directory('custom_arm_description')
 
-    # Include your robot description launch
-    description_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(description_launch_path),
+    # Path to your custom URDF
+    custom_urdf = os.path.join(
+        custom_arm_description_share, "urdf", "custom_arm.urdf.xacro"
     )
     
     # ------------------------------
@@ -63,8 +58,31 @@ def generate_launch_description():
     # ld.add_action(camera_static_tf)
 
     # ------------------------------
+    # Load custom arm description launch file
+    # ------------------------------
+    custom_arm_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(custom_arm_description_share, 'launch', 'custom-arm.launch.py')
+        ),
+        launch_arguments={
+            'robot_name': 'rx200',
+            'use_gripper': 'true'
+        }.items()
+    )
+    ld.add_action(custom_arm_launch)
+    
+        # Fake point cloud node
+    fake_pc_node = Node(
+        package='ros2_perception',   # package where fake_pointcloud.py is
+        executable='fake_pointcloud',
+        output='screen'
+    )
+    ld.add_action(fake_pc_node)
+    
+    # ------------------------------
     # Include Interbotix perception launch
     # ------------------------------
+    #ros2 launch interbotix_xsarm_perception xsarm_perception.launch.py robot_model:=rx200
     perception_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(perception_pkg_share, 'launch', 'xsarm_perception.launch.py')
@@ -72,11 +90,12 @@ def generate_launch_description():
         launch_arguments={
             'robot_model': 'rx200',
             'use_pointcloud_tuner': 'true',
-            'use_perception': 'true'
+            'use_perception': 'true',
+            'use_rviz': 'false'
         }.items()
     )
 
-    # ld.add_action(perception_launch)
+    ld.add_action(perception_launch)
     
     # Include MoveIt2 launch 
     #ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=rx200 hardware_type:=actual
@@ -86,8 +105,7 @@ def generate_launch_description():
         ),
         launch_arguments={
             'robot_model': 'rx200',
-            'hardware_type': 'fake',
-            'use_rviz': 'false'
+            'hardware_type': 'fake'
         }.items()
     )
     
