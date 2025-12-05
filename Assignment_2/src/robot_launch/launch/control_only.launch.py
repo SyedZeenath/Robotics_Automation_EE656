@@ -13,12 +13,12 @@ def generate_launch_description():
     # Path to Interbotix perception and moveit launch files
     perception_pkg_share = get_package_share_directory('interbotix_xsarm_perception')
     moveit_pkg_share = get_package_share_directory('interbotix_xsarm_moveit')
-    custom_arm_description_share = get_package_share_directory('custom_arm_description')
+    # custom_arm_description_share = get_package_share_directory('custom_arm_description')
 
     # Path to your custom URDF
-    custom_urdf = os.path.join(
-        custom_arm_description_share, "urdf", "custom_arm.urdf.xacro"
-    )
+    # custom_urdf = os.path.join(
+    #     custom_arm_description_share, "urdf", "custom_arm.urdf.xacro"
+    # )
     
     # ------------------------------
     # Load Urdf file
@@ -45,39 +45,39 @@ def generate_launch_description():
     # ------------------------------
     # Static transform: wrist -> camera
     # ------------------------------
-    # camera_static_tf = Node(
-    #     package="tf2_ros",
-    #     executable="static_transform_publisher",
-    #     name="camera_static_tf",
-    #     output="screen",
-    #     arguments=["0.0", "0.0", "0.1",   # x, y, z offset
-    #                "0.0", "0.0", "0.0",   # roll, pitch, yaw
-    #                "rx200/wrist_link",          # parent frame
-    #                "camera_color_optical_frame"]  # child frame
-    # )
-    # ld.add_action(camera_static_tf)
+    camera_static_tf = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="camera_static_tf",
+        output="screen",
+        arguments=["0.0", "0.0", "0.1",   # x, y, z offset
+                   "0.0", "0.0", "0.0", "1.0",   # roll, pitch, yaw
+                   "rx200/wrist_link",          # parent frame
+                   "camera_link"]  # child frame
+    )
+    ld.add_action(camera_static_tf)
 
     # ------------------------------
     # Load custom arm description launch file
     # ------------------------------
-    custom_arm_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(custom_arm_description_share, 'launch', 'custom-arm.launch.py')
-        ),
-        launch_arguments={
-            'robot_name': 'rx200',
-            'use_gripper': 'true'
-        }.items()
-    )
-    ld.add_action(custom_arm_launch)
+    # custom_arm_launch = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(
+    #         os.path.join(custom_arm_description_share, 'launch', 'custom-arm.launch.py')
+    #     ),
+    #     launch_arguments={
+    #         'robot_name': 'rx200',
+    #         'use_gripper': 'true'
+    #     }.items()
+    # )
+    # ld.add_action(custom_arm_launch)
     
-        # Fake point cloud node
-    fake_pc_node = Node(
-        package='ros2_perception',   # package where fake_pointcloud.py is
-        executable='fake_pointcloud',
-        output='screen'
-    )
-    ld.add_action(fake_pc_node)
+    # Fake point cloud node
+    # fake_pc_node = Node(
+    #     package='ros2_perception',   # package where fake_pointcloud.py is
+    #     executable='fake_pointcloud',
+    #     output='screen'
+    # )
+    # ld.add_action(fake_pc_node)
     
     # ------------------------------
     # Include Interbotix perception launch
@@ -91,7 +91,7 @@ def generate_launch_description():
             'robot_model': 'rx200',
             'use_pointcloud_tuner': 'true',
             'use_perception': 'true',
-            'use_rviz': 'false'
+            'use_rviz': 'true'
         }.items()
     )
 
@@ -105,11 +105,11 @@ def generate_launch_description():
         ),
         launch_arguments={
             'robot_model': 'rx200',
-            'hardware_type': 'fake'
+            'hardware_type': 'actual'
         }.items()
     )
     
-    ld.add_action(moveit_launch)
+    # ld.add_action(moveit_launch)
 
     # ------------------------------
     # Perception node
@@ -130,6 +130,6 @@ def generate_launch_description():
         parameters=[LaunchConfiguration('params_file')],
         output='screen'
     )
-    ld.add_action(moveit_control)
+    # ld.add_action(moveit_control)
 
     return ld

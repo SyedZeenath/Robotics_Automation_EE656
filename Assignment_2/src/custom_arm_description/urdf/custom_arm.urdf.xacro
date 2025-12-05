@@ -18,7 +18,7 @@
   <xacro:arg name="external_urdf_loc"               default=""/>
   <xacro:arg name="hardware_type"                   default="actual"/>
 
-  <xacro:property name="mesh_directory"             value="package://interbotix_xsarm_descriptions/meshes/${robot_model}_meshes"/>
+  <xacro:property name="mesh_directory"             value="package://custom_arm_description/meshes/${robot_model}_meshes"/>
   <xacro:property name="urdf_loc"                   value="$(arg external_urdf_loc)"/>
   <xacro:property name="hardware_type"              value="$(arg hardware_type)"/>
   <xacro:property name="pi_offset"                  value="0.00001"/>
@@ -56,7 +56,7 @@
   <xacro:property name="finger_limit_vel"           value="1"/>
 
   <material name="interbotix_black">
-    <texture filename="package://interbotix_xsarm_descriptions/meshes/interbotix_black.png"/>
+    <texture filename="package://custom_arm_description/meshes/interbotix_black.png"/>
   </material>
 
   <xacro:if value="$(arg use_world_frame)">
@@ -335,7 +335,7 @@
  
   <joint name="wrist_to_camera_optical" type="fixed">
  
-    <origin xyz="0.05 0 0.10" rpy="0 0 0"/>
+    <origin xyz="0.0 0 0.0" rpy="0 0 0.785"/>
     <parent link="$(arg robot_name)/wrist_link"/>
     <child link="camera_color_optical_frame"/>
   </joint>
@@ -480,7 +480,7 @@
     <!-- If the AR tag is being used, then add the AR tag mount -->
 
     <xacro:if value="$(arg show_ar_tag)">
-      <xacro:include filename="$(find interbotix_xsarm_descriptions)/urdf/ar_tag.urdf.xacro"/>
+      <xacro:include filename="$(find custom_arm_description)/urdf/ar_tag.urdf.xacro"/>
     </xacro:if> <!-- show_ar_tag -->
 
     <!-- If the gripper bar is being used, then also add the gripper bar -->
@@ -711,8 +711,8 @@
 
   </xacro:if> <!-- use_gripper -->
 
-  <xacro:include filename="$(find interbotix_xsarm_descriptions)/urdf/control.urdf.xacro"/>
-  <xacro:include filename="$(find interbotix_xsarm_descriptions)/urdf/gazebo_configs.urdf.xacro"/>
+  <xacro:include filename="$(find custom_arm_description)/urdf/control.urdf.xacro"/>
+  <xacro:include filename="$(find custom_arm_description)/urdf/gazebo_configs.urdf.xacro"/>
 
   <xacro:if value="${hardware_type == 'gz_classic'}">
     <xacro:gazebo_configs/>

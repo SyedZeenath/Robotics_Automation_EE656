@@ -154,7 +154,7 @@ class MoveItEEClient(Node):
         The message is expected to contain block color and position information.
         """
         self.detected_blocks = json.loads(msg.data)        
-        self.get_logger().info(f"Detected blocks: {detected_blocks}")
+        self.get_logger().info(f"Detected blocks: {self.detected_blocks}")
             
     # === Movement Sequence ===
     def run(self):

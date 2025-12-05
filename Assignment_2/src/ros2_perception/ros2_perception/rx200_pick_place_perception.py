@@ -8,38 +8,41 @@ import tf2_ros
 import numpy as np
 
 from interbotix_perception_msgs.srv import ClusterInfoArray
-from tf_transformations import euler_matrix
+from tf_transformations import euler_matrix, euler_from_quaternion
+
+from rclpy.duration import Duration
+from rclpy.time import Time
 
 class PickPlacePerception(Node):
     def __init__(self):
         super().__init__('rx200_pick_place_perception')
         self.base_link = 'rx200/base_link'
-        self.ref_frame = 'camera_color_optical_frame'
+        self.ref_frame = 'camera_link'
         
         self.pub = self.create_publisher(String, '/detected_blocks', 10)
         
         self.srv_get_cluster_positions = self.create_client(
             ClusterInfoArray,
-            f'/{filter_ns}/get_cluster_positions'
+            f'/pc_filter/get_cluster_positions'
         )
         while not self.srv_get_cluster_positions.wait_for_service(1.0):
             self.get_logger().info(
                 f"Waiting for services '{self.srv_get_cluster_positions.srv_name}', come up.")
-        
+        self.clusterArray = ClusterInfoArray.Request()
+
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
         
-        self.get_logger().info(f"Perception Node Initialised")        
+        self.get_logger().info(f"Perception Node Initialised")    
+        self.detect_blocks()    
 
     def get_cluster_positions(self):
         """
         Get the estimated positions of all pointcloud clusters.
         """
 
-        clusters = self.srv_get_cluster_positions.call_async(
-            ClusterInfoArray.Request()
-        )
-        self.wait_until_future_complete(clusters)
+        clusters = self.srv_get_cluster_positions.call_async(self.clusterArray)
+        rclpy.spin_until_future_complete(self, clusters)
         clusters = clusters.result().clusters
         if len(clusters) == 0:
             self.get_logger().warning('No clusters found...')
@@ -62,7 +65,7 @@ class PickPlacePerception(Node):
             tf2_ros.ExtrapolationException
         ):
             self.get_logger().error(
-                f"Failed to look up the transform from '{ref_frame}' to '{cluster_frame}'."
+                f"Failed to look up the transform from '{self.ref_frame}' to '{cluster_frame}'."
             )
             return False, []
         x = trans.transform.translation.x
@@ -113,6 +116,7 @@ class PickPlacePerception(Node):
     def detect_blocks(self):
         # get the pointcloud clusters to detect blocks
         clusters = self.get_cluster_positions()        
+        self.get_logger().info(f"Number of clusters detected: {len(clusters)}")
         # Create a dictionary to hold detected block positions by color
         detected_blocks = {}
         for cluster in clusters:
@@ -140,3 +144,9 @@ def main():
  
 if __name__ == '__main__':
     main()
+
+
+
+#THIS IS JUST FOR UNDERSTANDING PURPOSES
+#  response:
+# interbotix_perception_msgs.srv.ClusterInfoArray_Response(clusters=[interbotix_perception_msgs.msg.ClusterInfo(frame_id='camera_depth_optical_frame', position=geometry_msgs.msg.Point(x=-0.20518581569194794, y=0.0009221067884936929, z=0.41817721724510193), yaw=0.0, color=std_msgs.msg.ColorRGBA(r=222.0, g=182.0, b=108.0, a=0.0), min_z_point=geometry_msgs.msg.Point(x=-0.19437815248966217, y=0.004924398381263018, z=0.4018386900424957), num_points=100), interbotix_perception_msgs.msg.ClusterInfo(frame_id='camera_depth_optical_frame', position=geometry_msgs.msg.Point(x=-0.25981006026268005, y=0.15942522883415222, z=0.4832031726837158), yaw=0.0, color=std_msgs.msg.ColorRGBA(r=139.0, g=144.0, b=139.0, a=0.0), min_z_point=geometry_msgs.msg.Point(x=-0.2149903029203415, y=0.15500614047050476, z=0.4449998736381531), num_points=79), interbotix_perception_msgs.msg.ClusterInfo(frame_id='camera_depth_optical_frame', position=geometry_msgs.msg.Point(x=-0.26035547256469727, y=0.02977876178920269, z=0.5097497701644897), yaw=0.0, color=std_msgs.msg.ColorRGBA(r=222.0, g=182.0, b=112.0, a=0.0), min_z_point=geometry_msgs.msg.Point(x=-0.2772863805294037, y=0.0325452946126461, z=0.4949016571044922), num_points=79), interbotix_perception_msgs.msg.ClusterInfo(frame_id='camera_depth_optical_frame', position=geometry_msgs.msg.Point(x=-0.1557665765285492, y=0.04978485777974129, z=0.5068286657333374), yaw=0.0, color=std_msgs.msg.ColorRGBA(r=179.0, g=141.0, b=75.0, a=0.0), min_z_point=geometry_msgs.msg.Point(x=-0.13188007473945618, y=0.04913558438420296, z=0.49133336544036865), num_points=66)])

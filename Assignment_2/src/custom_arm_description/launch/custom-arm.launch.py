@@ -2,7 +2,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 import os
 from launch_ros.parameter_descriptions import ParameterValue
-from launch.substitutions import Command
+from launch.substitutions import Command, LaunchConfiguration
 
 def generate_launch_description():
     pkg_share = os.path.join(
@@ -13,9 +13,15 @@ def generate_launch_description():
     robot_description_content = ParameterValue(
         Command([
             'xacro ', urdf_path,
-            ' robot_name:=rx200',
-            ' use_gripper:=true',
-            ' base_link_frame:=base_link'
+            'robot_name:=', LaunchConfiguration('robot_name'),
+            'base_link_frame:=', LaunchConfiguration('base_link_frame'),
+            'use_gripper:=', LaunchConfiguration('use_gripper'),
+            'show_ar_tag:=', LaunchConfiguration('show_ar_tag'),
+            'show_gripper_bar:=', LaunchConfiguration('show_gripper_bar'),
+            'show_gripper_fingers:=', LaunchConfiguration('show_gripper_fingers'),
+            'use_world_frame:=', LaunchConfiguration('use_world_frame'),
+            'external_urdf_loc:=', LaunchConfiguration('external_urdf_loc'),
+            'hardware_type:=', LaunchConfiguration('hardware_type'), 
         ]),
         value_type=str
     )
@@ -30,10 +36,10 @@ def generate_launch_description():
             executable='joint_state_publisher',
             parameters=[{'robot_description': robot_description_content}]
         ),
-        # Node(
-        #     package='rviz2',
-        #     executable='rviz2',
+        Node(
+            package='rviz2',
+            executable='rviz2',
 
-        #     output='screen',
-        # )
+            output='screen',
+        )
     ])
