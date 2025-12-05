@@ -150,3 +150,20 @@ if __name__ == '__main__':
 #THIS IS JUST FOR UNDERSTANDING PURPOSES
 #  response:
 # interbotix_perception_msgs.srv.ClusterInfoArray_Response(clusters=[interbotix_perception_msgs.msg.ClusterInfo(frame_id='camera_depth_optical_frame', position=geometry_msgs.msg.Point(x=-0.20518581569194794, y=0.0009221067884936929, z=0.41817721724510193), yaw=0.0, color=std_msgs.msg.ColorRGBA(r=222.0, g=182.0, b=108.0, a=0.0), min_z_point=geometry_msgs.msg.Point(x=-0.19437815248966217, y=0.004924398381263018, z=0.4018386900424957), num_points=100), interbotix_perception_msgs.msg.ClusterInfo(frame_id='camera_depth_optical_frame', position=geometry_msgs.msg.Point(x=-0.25981006026268005, y=0.15942522883415222, z=0.4832031726837158), yaw=0.0, color=std_msgs.msg.ColorRGBA(r=139.0, g=144.0, b=139.0, a=0.0), min_z_point=geometry_msgs.msg.Point(x=-0.2149903029203415, y=0.15500614047050476, z=0.4449998736381531), num_points=79), interbotix_perception_msgs.msg.ClusterInfo(frame_id='camera_depth_optical_frame', position=geometry_msgs.msg.Point(x=-0.26035547256469727, y=0.02977876178920269, z=0.5097497701644897), yaw=0.0, color=std_msgs.msg.ColorRGBA(r=222.0, g=182.0, b=112.0, a=0.0), min_z_point=geometry_msgs.msg.Point(x=-0.2772863805294037, y=0.0325452946126461, z=0.4949016571044922), num_points=79), interbotix_perception_msgs.msg.ClusterInfo(frame_id='camera_depth_optical_frame', position=geometry_msgs.msg.Point(x=-0.1557665765285492, y=0.04978485777974129, z=0.5068286657333374), yaw=0.0, color=std_msgs.msg.ColorRGBA(r=179.0, g=141.0, b=75.0, a=0.0), min_z_point=geometry_msgs.msg.Point(x=-0.13188007473945618, y=0.04913558438420296, z=0.49133336544036865), num_points=66)])
+
+
+
+#Error I was getting:
+
+# [INFO] [1764957205.118426402] [rx200_pick_place_perception]: Number of clusters detected: 2
+# Traceback (most recent call last):
+#   File "/home/master26/Robotics_Automation_EE656/Assignment_2/install/ros2_perception/lib/ros2_perception/pick_place_perception", line 33, in <module>
+#     sys.exit(load_entry_point('ros2-perception==0.0.0', 'console_scripts', 'pick_place_perception')())
+#   File "/home/master26/Robotics_Automation_EE656/Assignment_2/install/ros2_perception/lib/python3.10/site-packages/ros2_perception/rx200_pick_place_perception.py", line 140, in main
+#     node = PickPlacePerception()   
+#   File "/home/master26/Robotics_Automation_EE656/Assignment_2/install/ros2_perception/lib/python3.10/site-packages/ros2_perception/rx200_pick_place_perception.py", line 37, in __init__
+#     self.detect_blocks()    
+#   File "/home/master26/Robotics_Automation_EE656/Assignment_2/install/ros2_perception/lib/python3.10/site-packages/ros2_perception/rx200_pick_place_perception.py", line 128, in detect_blocks
+#     cluster_color = self.extract_color_names(cluster['color'])
+# TypeError: 'bool' object is not subscriptable
+# [ros2run]: Process exited with failure 1
