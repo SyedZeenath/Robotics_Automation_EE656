@@ -42,42 +42,7 @@ def generate_launch_description():
     )
     ld.add_action(params_file)
 
-    # ------------------------------
-    # Static transform: wrist -> camera
-    # ------------------------------
-    camera_static_tf = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        name="camera_static_tf",
-        output="screen",
-        arguments=["0.0", "0.0", "0.0",   # x, y, z offset
-                   "0.0", "0.0", "0.0", "1.0",   # roll, pitch, yaw
-                   "rx200/wrist_link",          # parent frame
-                   "camera_link"]  # child frame
-    )
-    ld.add_action(camera_static_tf)
 
-    # ------------------------------
-    # Load custom arm description launch file
-    # ------------------------------
-    # custom_arm_launch = IncludeLaunchDescription(
-    #     PythonLaunchDescriptionSource(
-    #         os.path.join(custom_arm_description_share, 'launch', 'custom-arm.launch.py')
-    #     ),
-    #     launch_arguments={
-    #         'robot_name': 'rx200',
-    #         'use_gripper': 'true'
-    #     }.items()
-    # )
-    # ld.add_action(custom_arm_launch)
-    
-    # Fake point cloud node
-    # fake_pc_node = Node(
-    #     package='ros2_perception',   # package where fake_pointcloud.py is
-    #     executable='fake_pointcloud',
-    #     output='screen'
-    # )
-    # ld.add_action(fake_pc_node)
     
     # ------------------------------
     # Include Interbotix perception launch
@@ -89,14 +54,27 @@ def generate_launch_description():
         ),
         launch_arguments={
             'robot_model': 'rx200',
-            'use_pointcloud_tuner': 'true',
-            'use_perception': 'true',
-            'use_rviz': 'false'
+            'use_pointcloud_tuner_gui': 'true'
         }.items()
     )
 
-    ld.add_action(perception_launch)
+    # ld.add_action(perception_launch)
     
+    # ------------------------------
+    # Static transform: wrist -> camera
+    # ------------------------------
+    camera_static_tf = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="camera_static_tf",
+        output="screen",
+        arguments=["0.0", "0.0", "0.0",   # x, y, z offset
+                   "0.0", "0.0", "0.5",   # roll, pitch, yaw
+                   "rx200/wrist_link",          # parent frame
+                   "camera_link"]  # child frame
+    )
+    ld.add_action(camera_static_tf)
+
     # Include MoveIt2 launch 
     #ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=rx200 hardware_type:=actual
     moveit_launch = IncludeLaunchDescription(
@@ -105,21 +83,12 @@ def generate_launch_description():
         ),
         launch_arguments={
             'robot_model': 'rx200',
-            'hardware_type': 'actual'
+            'hardware_type': 'actual',
+            'use_moveit_rviz': 'false'
         }.items()
     )
     
-    ld.add_action(moveit_launch)
-
-    # ------------------------------
-    # Perception node
-    # ------------------------------
-    perception_node = Node(
-        package='ros2_perception',
-        executable='pick_place_perception',
-        output='screen'
-    )
-    ld.add_action(perception_node)
+    # ld.add_action(moveit_launch)
     
     # ------------------------------
     # MoveIt control node
@@ -130,6 +99,16 @@ def generate_launch_description():
         parameters=[LaunchConfiguration('params_file')],
         output='screen'
     )
-    # ld.add_action(moveit_control)
+    ld.add_action(moveit_control)
+    # ------------------------------
+    # Perception node
+    # ------------------------------
+    perception_node = Node(
+        package='ros2_perception',
+        executable='pick_place_perception',
+        output='screen'
+    )
+    ld.add_action(perception_node)
+
 
     return ld

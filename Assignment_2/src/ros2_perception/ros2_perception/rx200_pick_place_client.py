@@ -40,7 +40,8 @@ class MoveItEEClient(Node):
         
         self.perception_sub = self.create_subscription(String, '/detected_blocks', self.blocks_callback, 10)
         self.detected_blocks = {}
-        self.get_logger().info('Node initialized successfully!')
+        self.get_logger().info('Node initialized successfully!')        
+        self.run()
     
     def send_pose(self, x, y, z):
         pose = PoseStamped()
@@ -153,13 +154,24 @@ class MoveItEEClient(Node):
         Callback function to process detected blocks from perception node.
         The message is expected to contain block color and position information.
         """
+        self.get_logger().info('Testing!!!!!!!!!!!!!!!!!!!!!!!!')
+        msgJson = json.loads(msg.data)
+        self.get_logger().info(f"Received detected blocks message: {msgJson}")
         self.detected_blocks = json.loads(msg.data)        
         self.get_logger().info(f"Detected blocks: {self.detected_blocks}")
+
             
     # === Movement Sequence ===
     def run(self):
+
+        self.get_logger().info("Starting Pick and Place Sequence")
+        #Move to the top
+        top_point = Point(x=0.3, y=0.0, z=0.4)
+        self.send_pose(top_point.x, top_point.y, top_point.z)
+
         # check the color to pick
         for pick_color in self._pick_order:
+            self.get_logger().info(f"Processing pick color: {self.detected_blocks}")
             if pick_color not in self.detected_blocks:
                 self.get_logger().warning(f"{pick_color} block not detected, skipping to next color.")
                 continue
@@ -221,7 +233,6 @@ def main():
     rclpy.init()
     node = MoveItEEClient()   
     try:
-        # node.run()  
         rclpy.spin(node)          
     except KeyboardInterrupt:
         node.get_logger().info('Interrupted by user, shutting down')
