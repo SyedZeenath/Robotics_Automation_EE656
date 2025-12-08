@@ -50,7 +50,7 @@ def generate_launch_description():
         executable="static_transform_publisher",
         name="camera_static_tf",
         output="screen",
-        arguments=["0.0", "0.0", "0.1",   # x, y, z offset
+        arguments=["0.0", "0.0", "0.0",   # x, y, z offset
                    "0.0", "0.0", "0.0", "1.0",   # roll, pitch, yaw
                    "rx200/wrist_link",          # parent frame
                    "camera_link"]  # child frame
@@ -91,7 +91,7 @@ def generate_launch_description():
             'robot_model': 'rx200',
             'use_pointcloud_tuner': 'true',
             'use_perception': 'true',
-            'use_rviz': 'true'
+            'use_rviz': 'false'
         }.items()
     )
 
@@ -109,7 +109,7 @@ def generate_launch_description():
         }.items()
     )
     
-    # ld.add_action(moveit_launch)
+    ld.add_action(moveit_launch)
 
     # ------------------------------
     # Perception node
