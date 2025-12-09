@@ -56,7 +56,7 @@ def generate_launch_description():
         name="camera_static_tf",
         output="screen",
         arguments=["0.0", "0.0", "0.0",   # x, y, z offset
-                   "0.0", "0.0", "0.5",   # roll, pitch, yaw
+                   "0.0", "0.0", "0.38", "0.95",   # roll, pitch, yaw
                    "rx200/wrist_link",          # parent frame
                    "camera_link"]  # child frame
     )

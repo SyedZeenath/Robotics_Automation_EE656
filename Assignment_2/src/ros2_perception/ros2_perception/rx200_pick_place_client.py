@@ -28,7 +28,7 @@ class MoveItEEClient(Node):
         self.gripper_joint = 'left_finger'
         
         # stack positions
-        self.stack_pos = Point(x=0.1, y=0.2, z=0.0)
+        self.stack_pos = Point(x=0.3, y=-0.2, z=0.0)
         self.block_height = 0.05 # height of each block, used to calculate z coordinate while stacking
                 
         # Declare parameters to be used from launch file
@@ -168,7 +168,7 @@ class MoveItEEClient(Node):
 
         # check the color to pick
         for pick_color in self._pick_order:
-            self.get_logger().info(f"Processing pick color: {pick_color}")
+            self.get_logger().info(f"*******Processing pick color: {pick_color}*******")
             if pick_color not in self.detected_blocks:
                 self.get_logger().warning(f"{pick_color} block not detected, skipping to next color.")
                 continue
@@ -225,6 +225,8 @@ class MoveItEEClient(Node):
             above_place = Point(x=xp, y=yp, z=round(z_stack + lift_height, 2))
             self.get_logger().info(f"LIFTING {above_place}")
             self.send_pose(above_place.x, above_place.y, above_place.z)  
+            
+            time.sleep(5.0)
 
 def main():
     rclpy.init()

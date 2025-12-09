@@ -35,66 +35,67 @@ class PickPlacePerception(Node):
 
         self.br = tf2_ros.TransformBroadcaster(self)
 
-
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
         
         self.get_logger().info(f"Perception Node Initialised!")  
-        self.timer = self.create_timer(5.0, self.detect_blocks)  
-        # self.detect_blocks()    
+        # self.timer = self.create_timer(5.0, self.detect_blocks)  
+        self.detect_blocks()    
 
     def get_cluster_positions(self):
         """
         Get the estimated positions of all pointcloud clusters.
         """
 
-        clusters = self.srv_get_cluster_positions.call_async(self.clusterArray)
-        rclpy.spin_until_future_complete(self, clusters)
-        clusters = clusters.result().clusters
+        # clusters = self.srv_get_cluster_positions.call_async(self.clusterArray)
+        # rclpy.spin_until_future_complete(self, clusters)
+        clusters = [{'name': 'cluster_1', 'position': [0.00640977593138814, -0.0316816121339798, 0.6055483222007751], 'yaw': 0, 'color': [121.0, 107.0, 88.0], 'num_points': 666}, {'name': 'cluster_2', 'position': [0.0006334860809147358, -0.08940844982862473, 0.6497697830200195], 'yaw': 0, 'color': [203.0, 49.0, 56.0], 'num_points': 311}]
         if len(clusters) == 0:
             self.get_logger().warning('No clusters found...')
             return False, []
         num_clusters = len(clusters)
 
         # Get the cluster frame from the first cluster
-        cluster_frame = clusters[0].frame_id
+        # cluster_frame = clusters[0].frame_id
         # Get the transform from the 'ref_frame' to the cluster frame (i.e. the camera's depth
         # frame) - known as T_rc
+        self.get_logger().info(f"Looking up transform from '{self.wrist_link}' to '{self.ref_frame}'")
         # try:
-        #     trans = self.tf_buffer.lookup_transform(
-        #         target_frame=self.wrist_link,
-        #         source_frame=cluster_frame,
-        #         rclpy.time.Time(),
-        #         timeout=Duration(seconds=4.0)
-        #     )
+        trans = self.tf_buffer.lookup_transform(
+            target_frame=self.base_link,
+            source_frame='camera_depth_optical_frame',
+            time=rclpy.time.Time(),
+            timeout=Duration(seconds=4.0)
+        )
+        self.get_logger().info(f"{trans} - Transform lookup successful!")
         # except (
         #     tf2_ros.LookupException,
         #     tf2_ros.ConnectivityException,
         #     tf2_ros.ExtrapolationException
         # ):
         #     self.get_logger().error(
-        #         f"Failed to look up the transform from '{self.wrist_link}' to '{cluster_frame}'."
+        #         f"Failed to look up the transform from '{self.wrist_link}' to 'cluster_frame'."
         #     )
         #     return False, []
-        # x = trans.transform.translation.x
-        # y = trans.transform.translation.y
-        # z = trans.transform.translation.z
-        # quat = trans.transform.rotation
-        # rpy = euler_from_quaternion([quat.x, quat.y, quat.z, quat.w])
-        # T_rc = self.pose_to_matrix([x, y, z, rpy[0], rpy[1], rpy[2]])
+        x = trans.transform.translation.x
+        y = trans.transform.translation.y
+        z = trans.transform.translation.z
+        quat = trans.transform.rotation
+        rpy = euler_from_quaternion([quat.x, quat.y, quat.z, quat.w])
+        T_rc = self.pose_to_matrix([x, y, z, rpy[0], rpy[1], rpy[2]])
 
 
         # Transform the clusters to be w.r.t. the 'ref_frame' instead of the camera's depth frame
-        # transformed_clusters = []
-        # for idx, cluster in clusters:
-        #     # p_co is the cluster's position w.r.t. the camera's depth frame
-        #     # p_ro is the cluster's position w.r.t. the desired reference frame
-        #     p_co = [cluster.position.x, cluster.position.y, cluster.position.z, 1]
-        #     p_ro = np.dot(T_rc, p_co)
+        transformed_clusters = []
+        for idx, cluster in clusters:
+            # p_co is the cluster's position w.r.t. the camera's depth frame
+            # p_ro is the cluster's position w.r.t. the desired reference frame
+            p_co = [cluster.position.x, cluster.position.y, cluster.position.z, 1]
+            p_ro = np.dot(T_rc, p_co)
 
-        #     cluster.position.x = p_ro[0]
-        #     cluster.position.y = p_ro[1]
-        #     cluster.position.z = p_ro[2]
+            cluster.position.x = p_ro[0]
+            cluster.position.y = p_ro[1]
+            cluster.position.z = p_ro[2]
 
         # publish transforms to the /tf tree for debugging purposes (only once)
         final_trans: List[TransformStamped] = []
@@ -161,6 +162,31 @@ class PickPlacePerception(Node):
         clusters = self.get_cluster_positions()        
         self.get_logger().info(f"Number of clusters detected: {len(clusters)}")
         # Create a dictionary to hold detected block positions by color
+        
+        # clusters = [
+        #     {
+        #         'name': 'cluster_1',
+        #         'position': [0.3, -0.2, 0.1],
+        #         'yaw': 0,
+        #         'color': [203.0, 49.0, 56.0],
+        #         'num_points': 311
+        #     },
+        #     {
+        #         'name': 'cluster_2',
+        #         'position': [0.2, 0.2, 0.1],
+        #         'yaw': 0,
+        #         'color': [255.0, 255.0, 0.0],
+        #         'num_points': 250
+        #     },
+        #     {
+        #         'name': 'cluster_3',
+        #         'position': [0.25, 0.3, 0.1],
+        #         'yaw': 0,
+        #         'color': [49.0, 66.0, 255.0],
+        #         'num_points': 200
+        #     }
+        # ]
+        
         detected_blocks = {}
         for cluster in clusters:
             cluster_color = self.extract_color_names(cluster['color'])
@@ -170,9 +196,9 @@ class PickPlacePerception(Node):
             detected_blocks[cluster_color] = cluster_position
         
         # detected_blocks = {
-        #                    "red": [0.3, 0.2, 0.1],
+        #                    "red": [0.3, -0.2, 0.1],
         #                    "yellow": [0.2, 0.2, 0.1],
-        #                    "blue": [0.35, 0.2, 0.1]
+        #                    "blue": [0.25, 0.3, 0.1]
         #                    }
 
         msg = String()
