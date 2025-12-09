@@ -40,8 +40,7 @@ class MoveItEEClient(Node):
         
         self.perception_sub = self.create_subscription(String, '/detected_blocks', self.blocks_callback, 10)
         self.detected_blocks = {}
-        self.get_logger().info('Node initialized successfully!')        
-        self.run()
+        self.get_logger().info('Node initialized successfully!')
     
     def send_pose(self, x, y, z):
         pose = PoseStamped()
@@ -154,11 +153,9 @@ class MoveItEEClient(Node):
         Callback function to process detected blocks from perception node.
         The message is expected to contain block color and position information.
         """
-        self.get_logger().info('Testing!!!!!!!!!!!!!!!!!!!!!!!!')
-        msgJson = json.loads(msg.data)
-        self.get_logger().info(f"Received detected blocks message: {msgJson}")
         self.detected_blocks = json.loads(msg.data)        
-        self.get_logger().info(f"Detected blocks: {self.detected_blocks}")
+        self.get_logger().info(f"Detected blocks: {self.detected_blocks}")      
+        self.run()
 
             
     # === Movement Sequence ===
@@ -171,7 +168,7 @@ class MoveItEEClient(Node):
 
         # check the color to pick
         for pick_color in self._pick_order:
-            self.get_logger().info(f"Processing pick color: {self.detected_blocks}")
+            self.get_logger().info(f"Processing pick color: {pick_color}")
             if pick_color not in self.detected_blocks:
                 self.get_logger().warning(f"{pick_color} block not detected, skipping to next color.")
                 continue
@@ -179,14 +176,14 @@ class MoveItEEClient(Node):
             self.get_logger().info(f"Detected {pick_color} block at {self._pick_point}")
             
             x, y, z = self._pick_point
-            xp, yp, zp = self.stack_pos
+            xp, yp, zp = [self.stack_pos.x, self.stack_pos.y, self.stack_pos.z]
             z_stack = zp + self.block_height * self._pick_order.index(pick_color) # calculating height for stacking block one over the other
             lift_height = 0.1 # fixing it to one step above the object position
 
             distance = math.sqrt(x**2 + y**2)  # Horizontal distance from base
             if distance > 0.45 or distance < 0.1 or z < 0.05:
                 self.get_logger().error(f"Target ({x}, {y}, {z}) is unreachable: "
-                                    f"Distance {distance:.2f}m exceeds max reach {0.45}m or "
+                                    f"Distance {distance:.2f}m out of reach or "
                                     f"z {z}m is below min height {0.05}m")
                 return None
 

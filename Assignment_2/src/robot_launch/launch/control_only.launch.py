@@ -1,34 +1,18 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import (
+    LaunchConfiguration,
+    PathJoinSubstitution,
+)
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
+from launch_ros.substitutions import FindPackageShare
+
 import os
 
 def generate_launch_description():
     ld = LaunchDescription()
-    
-
-    # Path to Interbotix perception and moveit launch files
-    perception_pkg_share = get_package_share_directory('interbotix_xsarm_perception')
-    moveit_pkg_share = get_package_share_directory('interbotix_xsarm_moveit')
-    # custom_arm_description_share = get_package_share_directory('custom_arm_description')
-
-    # Path to your custom URDF
-    # custom_urdf = os.path.join(
-    #     custom_arm_description_share, "urdf", "custom_arm.urdf.xacro"
-    # )
-    
-    # ------------------------------
-    # Load Urdf file
-    # ------------------------------
-    # urdf_file = os.path.join(
-    #     get_package_share_directory('robot_urdf'),
-    #     'urdf',
-    #     'rx200.urdf.xacro'
-    # )
-
     # ------------------------------
     # Parameters file
     # ------------------------------
@@ -41,24 +25,27 @@ def generate_launch_description():
         description='Path to the ROS2 parameters file to use'
     )
     ld.add_action(params_file)
-
-
     
     # ------------------------------
     # Include Interbotix perception launch
     # ------------------------------
     #ros2 launch interbotix_xsarm_perception xsarm_perception.launch.py robot_model:=rx200
     perception_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(perception_pkg_share, 'launch', 'xsarm_perception.launch.py')
-        ),
+        PythonLaunchDescriptionSource([
+            PathJoinSubstitution([
+                FindPackageShare('interbotix_xsarm_perception'),
+                'launch',
+                'xsarm_perception.launch.py',
+            ])
+        ]),
         launch_arguments={
             'robot_model': 'rx200',
-            'use_pointcloud_tuner_gui': 'true'
+            'use_pointcloud_tuner_gui': 'true',
+            'hardware_type': 'fake',
         }.items()
     )
 
-    # ld.add_action(perception_launch)
+    ld.add_action(perception_launch)
     
     # ------------------------------
     # Static transform: wrist -> camera
@@ -78,17 +65,21 @@ def generate_launch_description():
     # Include MoveIt2 launch 
     #ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=rx200 hardware_type:=actual
     moveit_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(moveit_pkg_share, 'launch', 'xsarm_moveit.launch.py')
-        ),
+        PythonLaunchDescriptionSource([
+            PathJoinSubstitution([
+                FindPackageShare('interbotix_xsarm_moveit'),
+                'launch',
+                'xsarm_moveit.launch.py',
+            ])
+        ]),
         launch_arguments={
             'robot_model': 'rx200',
-            'hardware_type': 'actual',
+            'hardware_type': 'fake',
             'use_moveit_rviz': 'false'
         }.items()
     )
     
-    # ld.add_action(moveit_launch)
+    ld.add_action(moveit_launch)
     
     # ------------------------------
     # MoveIt control node
@@ -99,7 +90,7 @@ def generate_launch_description():
         parameters=[LaunchConfiguration('params_file')],
         output='screen'
     )
-    ld.add_action(moveit_control)
+    # ld.add_action(moveit_control)
     # ------------------------------
     # Perception node
     # ------------------------------

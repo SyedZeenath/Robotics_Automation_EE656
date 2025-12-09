@@ -39,8 +39,9 @@ class PickPlacePerception(Node):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
         
-        self.get_logger().info(f"Perception Node Initialised")    
-        self.detect_blocks()    
+        self.get_logger().info(f"Perception Node Initialised!")  
+        self.timer = self.create_timer(5.0, self.detect_blocks)  
+        # self.detect_blocks()    
 
     def get_cluster_positions(self):
         """
@@ -54,7 +55,7 @@ class PickPlacePerception(Node):
             self.get_logger().warning('No clusters found...')
             return False, []
         num_clusters = len(clusters)
-        # self.get_logger().info(f"clusters detected: {clusters}")
+
         # Get the cluster frame from the first cluster
         cluster_frame = clusters[0].frame_id
         # Get the transform from the 'ref_frame' to the cluster frame (i.e. the camera's depth
@@ -63,7 +64,7 @@ class PickPlacePerception(Node):
         #     trans = self.tf_buffer.lookup_transform(
         #         target_frame=self.wrist_link,
         #         source_frame=cluster_frame,
-        #         time=Time(),
+        #         rclpy.time.Time(),
         #         timeout=Duration(seconds=4.0)
         #     )
         # except (
@@ -159,7 +160,6 @@ class PickPlacePerception(Node):
         # get the pointcloud clusters to detect blocks
         clusters = self.get_cluster_positions()        
         self.get_logger().info(f"Number of clusters detected: {len(clusters)}")
-        self.get_logger().info(f"clusters detected 02: {clusters}")
         # Create a dictionary to hold detected block positions by color
         detected_blocks = {}
         for cluster in clusters:
@@ -168,6 +168,12 @@ class PickPlacePerception(Node):
                 continue
             cluster_position = cluster['position']
             detected_blocks[cluster_color] = cluster_position
+        
+        # detected_blocks = {
+        #                    "red": [0.3, 0.2, 0.1],
+        #                    "yellow": [0.2, 0.2, 0.1],
+        #                    "blue": [0.35, 0.2, 0.1]
+        #                    }
 
         msg = String()
         msg.data = json.dumps(detected_blocks)
