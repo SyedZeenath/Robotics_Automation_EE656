@@ -47,36 +47,33 @@ class PickPlacePerception(Node):
         Get the estimated positions of all pointcloud clusters.
         """
 
-        # clusters = self.srv_get_cluster_positions.call_async(self.clusterArray)
-        # rclpy.spin_until_future_complete(self, clusters)
-        clusters = [{'name': 'cluster_1', 'position': [0.00640977593138814, -0.0316816121339798, 0.6055483222007751], 'yaw': 0, 'color': [121.0, 107.0, 88.0], 'num_points': 666}, {'name': 'cluster_2', 'position': [0.0006334860809147358, -0.08940844982862473, 0.6497697830200195], 'yaw': 0, 'color': [203.0, 49.0, 56.0], 'num_points': 311}]
+        clusters = self.srv_get_cluster_positions.call_async(self.clusterArray)
+        rclpy.spin_until_future_complete(self, clusters)
+        clusters = clusters.result().clusters
         if len(clusters) == 0:
             self.get_logger().warning('No clusters found...')
             return False, []
         num_clusters = len(clusters)
 
         # Get the cluster frame from the first cluster
-        # cluster_frame = clusters[0].frame_id
-        # Get the transform from the 'ref_frame' to the cluster frame (i.e. the camera's depth
-        # frame) - known as T_rc
-        self.get_logger().info(f"Looking up transform from '{self.wrist_link}' to '{self.ref_frame}'")
-        # try:
-        trans = self.tf_buffer.lookup_transform(
-            target_frame=self.base_link,
-            source_frame='camera_depth_optical_frame',
-            time=rclpy.time.Time(),
-            timeout=Duration(seconds=4.0)
-        )
-        self.get_logger().info(f"{trans} - Transform lookup successful!")
-        # except (
-        #     tf2_ros.LookupException,
-        #     tf2_ros.ConnectivityException,
-        #     tf2_ros.ExtrapolationException
-        # ):
-        #     self.get_logger().error(
-        #         f"Failed to look up the transform from '{self.wrist_link}' to 'cluster_frame'."
-        #     )
-        #     return False, []
+        cluster_frame = clusters[0].frame_id
+        self.get_logger().info(f"Looking up transform from '{self.base_link}' to '{cluster_frame}'")
+        try:
+            trans = self.tf_buffer.lookup_transform(
+                target_frame=self.base_link,
+                source_frame='camera_depth_optical_frame',
+                time=Time()
+            )
+            self.get_logger().info(f"********Transform lookup successful! ********")
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException
+        ):
+            self.get_logger().error(
+                f"Failed to look up the transform from '{self.wrist_link}' to 'cluster_frame'."
+            )
+            return []
         x = trans.transform.translation.x
         y = trans.transform.translation.y
         z = trans.transform.translation.z
@@ -84,10 +81,9 @@ class PickPlacePerception(Node):
         rpy = euler_from_quaternion([quat.x, quat.y, quat.z, quat.w])
         T_rc = self.pose_to_matrix([x, y, z, rpy[0], rpy[1], rpy[2]])
 
+        self.get_logger().info(f"Clusters: '{clusters}'")
 
-        # Transform the clusters to be w.r.t. the 'ref_frame' instead of the camera's depth frame
-        transformed_clusters = []
-        for idx, cluster in clusters:
+        for cluster in clusters:
             # p_co is the cluster's position w.r.t. the camera's depth frame
             # p_ro is the cluster's position w.r.t. the desired reference frame
             p_co = [cluster.position.x, cluster.position.y, cluster.position.z, 1]
@@ -114,7 +110,7 @@ class PickPlacePerception(Node):
             cluster_num += 1
         self.br.sendTransform(final_trans)
 
-                # create a list of Python dictionaries to return to the user
+        # create a list of Python dictionaries to return to the user
         final_clusters = []
         for indx in range(num_clusters):
             name = final_trans[indx].child_frame_id
@@ -166,25 +162,25 @@ class PickPlacePerception(Node):
         # clusters = [
         #     {
         #         'name': 'cluster_1',
-        #         'position': [0.3, -0.2, 0.1],
+        #         'position': [0.3, 0.2, 0.2],
         #         'yaw': 0,
         #         'color': [203.0, 49.0, 56.0],
         #         'num_points': 311
         #     },
-        #     {
-        #         'name': 'cluster_2',
-        #         'position': [0.2, 0.2, 0.1],
-        #         'yaw': 0,
-        #         'color': [255.0, 255.0, 0.0],
-        #         'num_points': 250
-        #     },
-        #     {
-        #         'name': 'cluster_3',
-        #         'position': [0.25, 0.3, 0.1],
-        #         'yaw': 0,
-        #         'color': [49.0, 66.0, 255.0],
-        #         'num_points': 200
-        #     }
+            # {
+            #     'name': 'cluster_2',
+            #     'position': [0.2, 0.2, 0.1],
+            #     'yaw': 0,
+            #     'color': [255.0, 255.0, 0.0],
+            #     'num_points': 250
+            # },
+            # {
+            #     'name': 'cluster_3',
+            #     'position': [0.25, 0.3, 0.1],
+            #     'yaw': 0,
+            #     'color': [49.0, 66.0, 255.0],
+            #     'num_points': 200
+            # }
         # ]
         
         detected_blocks = {}
@@ -228,9 +224,7 @@ if __name__ == '__main__':
 #  response:
 
 
-# [INFO] [1765212623.903559325] [rx200_pick_place_perception]: clusters detected 02: [{'name': 'cluster_1', 'position': [0.00640977593138814, -0.0316816121339798, 0.6055483222007751], 'yaw': 0, 'color': [121.0, 107.0, 88.0], 'num_points': 666}, {'name': 'cluster_2', 'position': [0.0006334860809147358, -0.08940844982862473, 0.6497697830200195], 'yaw': 0, 'color': [203.0, 49.0, 56.0], 'num_points': 311}]
-# [INFO] [1765212623.903769306] [rx200_pick_place_perception]: Published detected blocks: {"unknown": [0.00640977593138814, -0.0316816121339798, 0.6055483222007751], "red": [0.0006334860809147358, -0.08940844982862473, 0.6497697830200195]}
+# Clusters: '[interbotix_perception_msgs.msg.ClusterInfo(frame_id='camera_depth_optical_frame', position=geometry_msgs.msg.Point(x=0.045460764318704605, y=-0.10489796102046967, z=0.47484132647514343), yaw=0.0, color=std_msgs.msg.ColorRGBA(r=225.0, g=177.0, b=101.0, a=0.0), min_z_point=geometry_msgs.msg.Point(x=0.029922788962721825, y=-0.10594867914915085, z=0.46627557277679443), num_points=259), interbotix_perception_msgs.msg.ClusterInfo(frame_id='camera_depth_optical_frame', position=geometry_msgs.msg.Point(x=-0.021947862580418587, y=-0.12682467699050903, z=0.48142504692077637), yaw=0.0, color=std_msgs.msg.ColorRGBA(r=192.0, g=38.0, b=42.0, a=0.0), min_z_point=geometry_msgs.msg.Point(x=-0.0340929739177227, y=-0.12213777750730515, z=0.4699997901916504), num_points=196)]'
 
 
-
-# data: '{"red": [0.013220386579632759, 0.047836482524871826, 0.5752228498458862]}'
+# data='{"red": [0.4698081011063667, 0.01762461051054736, 0.24748738600375847]}'

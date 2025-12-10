@@ -28,7 +28,7 @@ class MoveItEEClient(Node):
         self.gripper_joint = 'left_finger'
         
         # stack positions
-        self.stack_pos = Point(x=0.3, y=-0.2, z=0.0)
+        self.stack_pos = Point(x=0.3, y=0.2, z=0.1)
         self.block_height = 0.05 # height of each block, used to calculate z coordinate while stacking
                 
         # Declare parameters to be used from launch file
@@ -41,6 +41,9 @@ class MoveItEEClient(Node):
         self.perception_sub = self.create_subscription(String, '/detected_blocks', self.blocks_callback, 10)
         self.detected_blocks = {}
         self.get_logger().info('Node initialized successfully!')
+        top_point = Point(x=0.3, y=0.0, z=0.45)
+        self.send_pose(top_point.x, top_point.y, top_point.z)
+
     
     def send_pose(self, x, y, z):
         pose = PoseStamped()
@@ -163,8 +166,8 @@ class MoveItEEClient(Node):
 
         self.get_logger().info("Starting Pick and Place Sequence")
         #Move to the top
-        top_point = Point(x=0.3, y=0.0, z=0.4)
-        self.send_pose(top_point.x, top_point.y, top_point.z)
+        # top_point = Point(x=0.3, y=0.0, z=0.45)
+        # self.send_pose(top_point.x, top_point.y, top_point.z)
 
         # check the color to pick
         for pick_color in self._pick_order:
@@ -181,7 +184,7 @@ class MoveItEEClient(Node):
             lift_height = 0.1 # fixing it to one step above the object position
 
             distance = math.sqrt(x**2 + y**2)  # Horizontal distance from base
-            if distance > 0.45 or distance < 0.1 or z < 0.05:
+            if distance > 0.5 or distance < 0.1 or z < 0.05:
                 self.get_logger().error(f"Target ({x}, {y}, {z}) is unreachable: "
                                     f"Distance {distance:.2f}m out of reach or "
                                     f"z {z}m is below min height {0.05}m")
