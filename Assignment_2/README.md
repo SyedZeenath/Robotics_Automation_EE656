@@ -49,6 +49,13 @@ ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=rx200 ha
 ```bash
 ros2 launch interbotix_xsarm_perception xsarm_perception.launch.py robot_model:=rx200 use_pointcloud_tuner_gui:=true
 ```
+Static transform
+```bash
+ros2 run tf2_ros static_transform_publisher 0.09 0.0 0.10 -0.1045 0.0 0.0 0.9945 rx200/wrist_link camera_link
+```
+```bash
+ros2 param set /rx200_pick_place_perception pick_order "[\'blue\', \'yellow\', \'red\']"
+```
 
 ## Folder Structure:
 

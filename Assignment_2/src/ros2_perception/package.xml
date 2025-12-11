@@ -17,13 +17,12 @@
   <depend>shape_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>rcl_interfaces</depend>
 
   <depend>interbotix_perception_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>tf_transformations</depend>
-
-  <!-- Just testing this out to understand -->
-  <depend>realsense2_camera</depend>
+  <depend>tf2_geometry_msgs</depend>
   
   <export>
     <build_type>ament_python</build_type>

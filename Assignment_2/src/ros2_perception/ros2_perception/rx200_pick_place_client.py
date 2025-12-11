@@ -8,8 +8,9 @@ from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import PoseStamped, Quaternion, Point
 import time
 import math
-from transforms3d.euler import euler2quat
+from tf_transformations import quaternion_from_euler
 from std_msgs.msg import String
+
 
 import json
 
@@ -28,20 +29,18 @@ class MoveItEEClient(Node):
         self.gripper_joint = 'left_finger'
         
         # stack positions
-        self.stack_pos = Point(x=0.3, y=0.2, z=0.1)
+        self.stack_pos = Point(x=0.3, y=-0.2, z=0.1)
         self.block_height = 0.05 # height of each block, used to calculate z coordinate while stacking
                 
         # Declare parameters to be used from launch file
         self.declare_parameter('start_state_gripper', value=True)
-        self.declare_parameter('pick_order', value=['red', 'blue', 'yellow'])
  
         self.send_gr_pose(self.get_parameter('start_state_gripper').value)
-        self._pick_order = self.get_parameter('pick_order').value
         
         self.perception_sub = self.create_subscription(String, '/detected_blocks', self.blocks_callback, 10)
         self.detected_blocks = {}
         self.get_logger().info('Node initialized successfully!')
-        top_point = Point(x=0.3, y=0.0, z=0.45)
+        top_point = Point(x=0.2, y=0.0, z=0.35)
         self.send_pose(top_point.x, top_point.y, top_point.z)
 
     
@@ -52,18 +51,33 @@ class MoveItEEClient(Node):
         pose.pose.position.y = y
         pose.pose.position.z = z
         
-        distance = math.sqrt(x**2 + y**2)  # Horizontal distance from base
-        # pitch is descided based on how close we are to the object and how low it is
-        if distance <= 0.2:
-            pitch = math.pi / 2  # Pointing downwards
+        distance = math.sqrt(x**2 + y**2)
+
+        # Avoid division by zero for very close points
+        if distance < 0.01:
+            yaw = 0.0
         else:
-            pitch = 0.0  # Level orientation
-        # yaw = tan-1(y/x) gives angle between x-axis and line joining origin to point (x,y) 
-        # Stating how much the end-effector should rotate to face the point (x,y)
-        # euler2quat converts euler angles to quaternion
-        yaw = math.atan2(y, x) 
-        q = euler2quat(0, pitch, yaw)
-        pose.pose.orientation = Quaternion(x=q[1], y=q[2], z=q[3], w=q[0])
+            yaw = math.atan2(y, x)
+
+        # Adaptive pitch: point naturally toward the target based on vertical offset
+        pitch = math.atan2(z, distance)
+
+        # Limit pitch to reasonable range to prevent IK over-extension
+        # max_pitch = 1.0  # ~57 degrees
+        # min_pitch = -0.5 # ~-28 degrees
+        # pitch = max(min(pitch, max_pitch), min_pitch)
+
+        # Roll is usually zero
+        roll = 0.0
+        self.get_logger().info(f"Computed Euler angles - Roll: {roll}, Pitch: {pitch}, Yaw: {yaw}")
+        # Convert to quaternion
+        q = quaternion_from_euler(roll, pitch, yaw)
+
+        # Construct pose object
+        pose.pose.orientation.x = q[0]
+        pose.pose.orientation.y = q[1]
+        pose.pose.orientation.z = q[2]
+        pose.pose.orientation.w = q[3]
 
         req = MotionPlanRequest()
         req.group_name = self.group_name_arm
@@ -86,7 +100,7 @@ class MoveItEEClient(Node):
         oc.orientation = pose.pose.orientation
         oc.absolute_x_axis_tolerance = 0.05
         oc.absolute_y_axis_tolerance = 0.05
-        oc.absolute_z_axis_tolerance = 0.05
+        oc.absolute_z_axis_tolerance = 0.90
         oc.weight = 1.0
 
         goal_constraints = Constraints()
@@ -156,21 +170,23 @@ class MoveItEEClient(Node):
         Callback function to process detected blocks from perception node.
         The message is expected to contain block color and position information.
         """
-        self.detected_blocks = json.loads(msg.data)        
+        self.callback_res = json.loads(msg.data)
+        self.get_logger().info(f"Received detected blocks data: {self.callback_res}")
+        self.detected_blocks = self.callback_res['color']
+        self.pick_order = self.callback_res['pick_order']
         self.get_logger().info(f"Detected blocks: {self.detected_blocks}")      
         self.run()
+
 
             
     # === Movement Sequence ===
     def run(self):
 
         self.get_logger().info("Starting Pick and Place Sequence")
-        #Move to the top
-        # top_point = Point(x=0.3, y=0.0, z=0.45)
-        # self.send_pose(top_point.x, top_point.y, top_point.z)
-
         # check the color to pick
-        for pick_color in self._pick_order:
+        self.get_logger().info(f"Detected Blocks: {self.detected_blocks}")
+        for pick_color in self.pick_order:
+            pick_color = pick_color.replace("\\","").replace("'", "")
             self.get_logger().info(f"*******Processing pick color: {pick_color}*******")
             if pick_color not in self.detected_blocks:
                 self.get_logger().warning(f"{pick_color} block not detected, skipping to next color.")
@@ -180,7 +196,7 @@ class MoveItEEClient(Node):
             
             x, y, z = self._pick_point
             xp, yp, zp = [self.stack_pos.x, self.stack_pos.y, self.stack_pos.z]
-            z_stack = zp + self.block_height * self._pick_order.index(pick_color) # calculating height for stacking block one over the other
+            z_stack = zp + self.block_height * self.pick_order.index(pick_color) # calculating height for stacking block one over the other
             lift_height = 0.1 # fixing it to one step above the object position
 
             distance = math.sqrt(x**2 + y**2)  # Horizontal distance from base
