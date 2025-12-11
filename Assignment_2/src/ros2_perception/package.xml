@@ -20,6 +20,7 @@
   <depend>rcl_interfaces</depend>
 
   <depend>interbotix_perception_msgs</depend>
+  <depend>interbotix_common_modules</depend>
   <depend>tf2_ros</depend>
   <depend>tf_transformations</depend>
   <depend>tf2_geometry_msgs</depend>

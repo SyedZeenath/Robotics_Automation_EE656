@@ -13,6 +13,8 @@
   <test_depend>ament_lint_common</test_depend>
 
   <depend>rx200_pick_place</depend>
+  <depend>interbotix_xs_modules</depend>
+  <depend>realsense2_camera</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
