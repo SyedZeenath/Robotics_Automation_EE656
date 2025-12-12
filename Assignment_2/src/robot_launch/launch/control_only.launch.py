@@ -21,7 +21,7 @@ def generate_launch_description():
     ld = LaunchDescription()
     
     # ------------------------------
-    # Include MoveIt launch
+    # Interbotix MoveIt launch
     # ------------------------------
     moveit_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -33,29 +33,15 @@ def generate_launch_description():
         ]),
         launch_arguments={
             'robot_model': 'rx200',
-            'hardware_type': 'actual',
-            'use_moveit_rviz': 'true'
+            'hardware_type': 'fake',
+            'rviz_config_file': PathJoinSubstitution([
+                FindPackageShare('ros2_perception'),
+                'config',
+                'rx200_pick_place.rviz'
+            ]),
         }.items()
     )
-    
-    # ------------------------------
-    # Include Perception launch
-    # ------------------------------
-    # perception_launch = IncludeLaunchDescription(
-    #     PythonLaunchDescriptionSource([
-    #         PathJoinSubstitution([
-    #             FindPackageShare('interbotix_xsarm_perception'),
-    #             'launch',
-    #             'xsarm_perception.launch.py'
-    #         ])
-    #     ]),
-    #     launch_arguments={
-    #         'robot_model': 'rx200',
-    #         'hardware_type': 'actual',
-    #         'use_pointcloud_tuner_gui': 'true',
-    #         'use_rviz': 'true'
-    #     }.items()
-    # )
+
     # ------------------------------
     # Static transform: wrist -> camera
     # ------------------------------
@@ -100,7 +86,7 @@ def generate_launch_description():
     )
 
     # ------------------------------
-    # Perceprtion code
+    # Interbotix Perception
     # ------------------------------
 
     pointcloud_enable_launch_arg = LaunchConfiguration('rs_camera_pointcloud_enable')
@@ -111,11 +97,8 @@ def generate_launch_description():
     initial_reset_launch_arg = LaunchConfiguration('rs_camera_initial_reset')
 
     filter_ns_launch_arg = LaunchConfiguration('filter_ns')
-    filter_params_launch_arg = LaunchConfiguration('filter_params')
     use_pointcloud_tuner_gui_launch_arg = LaunchConfiguration('use_pointcloud_tuner_gui')
     cloud_topic_launch_arg = LaunchConfiguration('cloud_topic')
-
-
 
     rs_camera_launch_include = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -146,7 +129,6 @@ def generate_launch_description():
         ]),
         launch_arguments={
             'filter_ns': filter_ns_launch_arg,
-            'filter_params': filter_params_launch_arg,
             'cloud_topic': cloud_topic_launch_arg,
             'use_pointcloud_tuner_gui': use_pointcloud_tuner_gui_launch_arg,
         }.items(),
@@ -161,6 +143,7 @@ def generate_launch_description():
             description='model type of the Interbotix Arm such as `wx200` or `rx150`.',
         )
     )
+    
     declared_arguments.append(
         DeclareLaunchArgument(
             'robot_name',
@@ -170,12 +153,7 @@ def generate_launch_description():
             ),
         )
     )
-    declared_arguments.extend(
-        declare_interbotix_xsarm_robot_description_launch_arguments(
-            show_ar_tag='false',
-            use_world_frame='false',
-        )
-    )
+
     declared_arguments.append(
         DeclareLaunchArgument(
             'rs_camera_pointcloud_enable',
@@ -232,19 +210,7 @@ def generate_launch_description():
             description='namespace where the pointcloud related nodes and parameters are located.',
         )
     )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'filter_params',
-            default_value=PathJoinSubstitution([
-                FindPackageShare('interbotix_xsarm_perception'),
-                'config',
-                'filter_params.yaml'
-            ]),
-            description=(
-                'file location of the parameters used to tune the perception pipeline filters.'
-            ),
-        )
-    )
+
     declared_arguments.append(
         DeclareLaunchArgument(
             'use_pointcloud_tuner_gui',
@@ -284,27 +250,17 @@ def generate_launch_description():
             description='the absolute ROS topic name to subscribe to the camera color info.',
         )
     )
+    
 
-
-
-    # declared_arguments.append(
-    #     DeclareLaunchArgument(
-    #         'use_rviz',
-    #         default_value='true',
-    #         choices=('true', 'false'),
-    #         description='launches RViz if set to `true`.',
-    #     )
-    # )
 
     for decl_arg in declared_arguments:
         ld.add_action(decl_arg)
 
+    ld.add_action(rs_camera_launch_include)
+    ld.add_action(pc_filter_launch_include)
     ld.add_action(moveit_launch)
-    # ld.add_action(rs_camera_launch_include)
-    # ld.add_action(pc_filter_launch_include)
-    # ld.add_action(perception_launch),
-    # ld.add_action(camera_static_tf)
+    ld.add_action(camera_static_tf)
     ld.add_action(rx200_node)
-    # ld.add_action(wait_for_rx200_node)
+    ld.add_action(wait_for_rx200_node)
 
     return ld

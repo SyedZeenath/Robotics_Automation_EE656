@@ -1,4 +1,0 @@
-rx200_pick_place:
-  ros__parameters:
-    start_state_gripper: false
-    pick_order: ['red', 'yellow', 'blue']
