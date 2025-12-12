@@ -10,6 +10,8 @@ import time
 import math
 from tf_transformations import quaternion_from_euler
 from std_msgs.msg import String
+from sensor_msgs.msg import JointState
+from moveit_msgs.msg import RobotState
 
 
 import json
@@ -22,29 +24,33 @@ class MoveItEEClient(Node):
         while not self._client.wait_for_server(1.0):
             self.get_logger().warning('Waiting for Action Server...')
 
+        # Robot-specific parameters
         self.group_name_arm = 'interbotix_arm'
         self.group_name_gripper = 'interbotix_gripper'
         self.ee_link = 'rx200/ee_gripper_link'
         self.base_link = 'rx200/base_link'
         self.gripper_joint = 'left_finger'
         
-        # stack positions
-        self.stack_pos = Point(x=0.3, y=0.2, z=0.1)
-        self.block_height = 0.05 # height of each block, used to calculate z coordinate while stacking
+        self.stack_pos = Point(x=0.3, y=-0.2, z=0.005)    # stack position
+        self.block_height = 0.05         # height of each block, used to calculate z coordinate while stacking
                 
         # Declare parameters to be used from launch file
-        self.declare_parameter('start_state_gripper', value=True)
- 
+        self.declare_parameter('start_state_gripper', value=True) 
         self.send_gr_pose(self.get_parameter('start_state_gripper').value)
         
-        self.perception_sub = self.create_subscription(String, '/detected_blocks', self.blocks_callback, 10)
+        # ---------------
+        # Subscriptions to joint states and perception node
+        # ---------------
+        self.current_joint_state = None
+        self.create_subscription(JointState, '/rx200/joint_states', self.joint_state_cb, 10) # Subscribe to joint states
+        self.create_subscription(String, '/detected_blocks', self.blocks_callback, 10) 
         self.detected_blocks = {}
-        self.get_logger().info('Node initialized successfully!')
-        top_point = Point(x=0.1, y=0.0, z=0.4)
-        self.send_pose(top_point.x, top_point.y, top_point.z)
+        
+        # Go to home position
+        self.home_pos()
+        self.get_logger().info('RX200 Pick & Place Ready!')
 
-    
-    def send_pose(self, x, y, z):
+    def send_pose(self, x, y, z, pitch=0.78):
         pose = PoseStamped()
         pose.header.frame_id = self.base_link
         pose.pose.position.x = x
@@ -52,26 +58,18 @@ class MoveItEEClient(Node):
         pose.pose.position.z = z
         
         distance = math.sqrt(x**2 + y**2)
-
         # Avoid division by zero for very close points
         if distance < 0.01:
             yaw = 0.0
         else:
-            yaw = 0.0
-
-        # Adaptive pitch: point naturally toward the target based on vertical offset
-        pitch = math.pi / 6  #math.atan2(z, distance)
-
-        # Limit pitch to reasonable range to prevent IK over-extension
-        # max_pitch = 1.0  # ~57 degrees
-        # min_pitch = -0.5 # ~-28 degrees
-        # pitch = max(min(pitch, max_pitch), min_pitch)
-
-        # Roll is usually zero
-        roll = 0.0
-        self.get_logger().info(f"Computed Euler angles - Roll: {roll}, Pitch: {pitch}, Yaw: {yaw}")
-        # Convert to quaternion
-        q = quaternion_from_euler(roll, pitch, yaw)
+            yaw = math.atan2(y, x)
+        # if z < 0.1:
+        #     pitch = 1.5 # Pointing downwards
+        # else:
+        #     pitch = 0.78   # point naturally toward the target based on vertical offset
+        roll = 0.0 # Roll is usually zero
+        # pitch = 0.0
+        q = quaternion_from_euler(roll, pitch, yaw)   # Convert to quaternion
 
         # Construct pose object
         pose.pose.orientation.x = q[0]
@@ -82,39 +80,39 @@ class MoveItEEClient(Node):
         req = MotionPlanRequest()
         req.group_name = self.group_name_arm
         req.allowed_planning_time  = 10.0
-        req.num_planning_attempts = 3 #try 3 times, always have to be int, no float
+        req.num_planning_attempts = 3
 
+        # Start from current real joint state (eliminates huge rotations)
+        if self.current_joint_state:
+            rs = RobotState()
+            rs.joint_state = self.current_joint_state
+            rs.is_diff = False
+            req.start_state = rs
+            
         pc = PositionConstraint()
         pc.header.frame_id = self.base_link
         pc.link_name = self.ee_link
         sp = SolidPrimitive() 
         sp.type = SolidPrimitive.SPHERE
-        sp.dimensions = [0.03]
-
-        # pose_position_only = Pose()
-        # pose_position_only.position.x = x
-        # pose_position_only.position.y = y
-        # pose_position_only.position.z = z
-        # pose_position_only.orientation.w = 1.0   # identity, ignored
-        # pc.constraint_region.primitive_poses = [pose_position_only]
+        sp.dimensions = [0.10]
 
         pc.constraint_region.primitives = [sp]
         pc.constraint_region.primitive_poses = [pose.pose]
-
+            
         oc = OrientationConstraint()
         oc.header.frame_id = self.base_link
         oc.link_name = self.ee_link
         oc.orientation = pose.pose.orientation
-        oc.absolute_x_axis_tolerance = 0.35
-        oc.absolute_y_axis_tolerance = 0.35
-        oc.absolute_z_axis_tolerance = 0.9
+        oc.absolute_x_axis_tolerance = 0.5
+        oc.absolute_y_axis_tolerance = 0.5
+        oc.absolute_z_axis_tolerance = 0.9  # Allow full yaw rotation
         oc.weight = 1.0
 
         goal_constraints = Constraints()
         goal_constraints.position_constraints = [pc]
         goal_constraints.orientation_constraints = [oc]
-        req.goal_constraints = [goal_constraints]
 
+        req.goal_constraints = [goal_constraints]
 
         goal = MoveGroup.Goal()
         goal.request = req
@@ -124,7 +122,8 @@ class MoveItEEClient(Node):
 
         send_future = self._client.send_goal_async(goal, feedback_callback=self._feedback_cb)
         send_future.add_done_callback(self._goal_response_cb)
-
+        return send_future
+    
     def send_gr_pose(self, open=True):
         req = MotionPlanRequest()
         req.group_name = self.group_name_gripper
@@ -133,7 +132,7 @@ class MoveItEEClient(Node):
 
         jc = JointConstraint()
         jc.joint_name = self.gripper_joint
-        jc.position = 0.05 if open else 0.02
+        jc.position = 0.04 if open else 0.02
         jc.tolerance_above = 0.01
         jc.tolerance_below = 0.01
         jc.weight = 1.0
@@ -153,6 +152,11 @@ class MoveItEEClient(Node):
         # Return the send future to allow optional synchronous waiting by the caller
         return send_future
 
+    def home_pos(self):
+        self.get_logger().info('Moving to home position...')
+        self.send_pose(0.2, 0.0, 0.4)   # high pose
+        time.sleep(2.0)
+        
     # Callbacks 
     def _goal_response_cb(self, future):
         goal_handle = future.result()
@@ -182,28 +186,32 @@ class MoveItEEClient(Node):
         self.pick_order = self.callback_res['pick_order']    
         self.run()
 
-
-            
+    def joint_state_cb(self, msg):
+        self.current_joint_state = msg
+         
     # === Movement Sequence ===
     def run(self):
-
         self.get_logger().info("Starting Pick and Place Sequence")
         # check the color to pick
-        self.get_logger().info(f"Detected Blocks: {self.detected_blocks}")
         for pick_color in self.pick_order:
-            pick_color = pick_color.replace("\\","").replace("'", "")
+            
             self.get_logger().info(f"*******Processing pick color: {pick_color}*******")
+            
             if pick_color not in self.detected_blocks:
                 self.get_logger().warning(f"{pick_color} block not detected, skipping to next color.")
                 continue
+            
             self._pick_point = self.detected_blocks[pick_color]
             self.get_logger().info(f"Detected {pick_color} block at {self._pick_point}")
             
+            # ------------------
+            # initialize pick & place points
+            # ------------------
             x, y, z = self._pick_point
             xp, yp, zp = [self.stack_pos.x, self.stack_pos.y, self.stack_pos.z]
             z_stack = zp + self.block_height * self.pick_order.index(pick_color) # calculating height for stacking block one over the other
-            lift_height = 0.1 # fixing it to one step above the object position
-
+            lift_height = 0.12 # fixing it to one step above the object position
+            
             distance = math.sqrt(x**2 + y**2)  # Horizontal distance from base
             # if distance > 0.45 or distance < 0.1 or z < 0.05:
             #     self.get_logger().error(f"Target ({x}, {y}, {z}) is unreachable: "
@@ -211,46 +219,53 @@ class MoveItEEClient(Node):
             #                         f"z {z}m is below min height {0.05}m")
             #     return None
 
-        
+
+            
             # 1. Before Pick: A step before the pick point 
-            before_pick = Point(x=round(x - 0.1, 2), y=y, z=z)
-            self.get_logger().info(f"Moving before PICK point: {before_pick}")
-            self.send_pose(before_pick.x, before_pick.y, before_pick.z)
-            time.sleep(5.0)                                
+            self.get_logger().info(f"Moving before PICK point")
+            if z < 0.01:
+                pitch = 1.5  # Pointing downwards for low z
+            if not self.send_pose(x, y, z + lift_height, pitch):
+                continue  
+            time.sleep(5.0)                      
             # 2. Move to Pick point
-            pick_point = Point(x=x, y=y, z=z-0.02)
-            self.get_logger().info(f"MOVING TO PICK point: {pick_point}")
-            self.send_pose(pick_point.x, pick_point.y, pick_point.z)
+            self.get_logger().info(f"MOVING TO PICK point")
+            if not self.send_pose(x, y, z, pitch):
+                continue
             time.sleep(5.0)
             # 3. Close gripper: hold the object
             self.get_logger().info("CLOSING GRIPPER")
-            self.send_gr_pose(open=False)
-            time.sleep(7.0)
+            if not self.send_gr_pose(open=False):
+                continue            
             # 4. Lift
-            above_pick = Point(x=x, y=y, z= round(z + lift_height,2))
-            self.get_logger().info(f"LIFTING: {above_pick}")
-            self.send_pose(above_pick.x, above_pick.y, above_pick.z)
+            time.sleep(7.0)
+            self.get_logger().info(f"LIFTING")
+            if not self.send_pose(x, y, z + lift_height, pitch):
+                continue
             time.sleep(5.0)
             # 5. Go above Place point
-            # above_place = Point(x=xp, y=yp, z=round(z_stack + lift_height, 2))
-            # self.get_logger().info(f"Moving ABOVE PLACE point: {above_place}")
-            # self.send_pose(above_place.x, above_place.y, above_place.z)
-            # time.sleep(5.0)
+            self.get_logger().info(f"Moving ABOVE PLACE point")
+            if not self.send_pose(xp, yp, z_stack, pitch):
+                continue
+            time.sleep(5.0)
             # 6. Descend to Place
-            place_point = Point(x=xp, y=yp, z=z_stack)
-            self.get_logger().info(f"DESCENDING TO PLACE point: {place_point}")
-            self.send_pose(place_point.x, place_point.y, place_point.z)
+            self.get_logger().info(f"DESCENDING TO PLACE point")
+            if not self.send_pose(xp, yp, z_stack, pitch):
+                continue
             time.sleep(5.0)
             # 7. Open gripper: release the object
             self.get_logger().info("OPENING GRIPPER")
-            self.send_gr_pose(open=True)
+            if not self.send_gr_pose(open=True):
+                continue
             time.sleep(7.0)
             # 8. Lift: Back to above place            
-            above_place = Point(x=xp, y=yp, z=round(z_stack + lift_height, 2))
-            self.get_logger().info(f"LIFTING {above_place}")
-            self.send_pose(above_place.x, above_place.y, above_place.z)  
-            
+            self.get_logger().info(f"LIFTING")
+            if not self.send_pose(xp, yp, z_stack + lift_height, pitch):
+                continue
             time.sleep(5.0)
+            
+        self.get_logger().info('Pick & Place cycle complete!')
+        self.home_pos()
 
 def main():
     rclpy.init()

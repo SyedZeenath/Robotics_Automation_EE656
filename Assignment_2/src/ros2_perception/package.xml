@@ -18,6 +18,7 @@
   <depend>geometry_msgs</depend>
   <depend>std_msgs</depend>
   <depend>rcl_interfaces</depend>
+  <depend>sensor_msgs</depend>
 
   <depend>interbotix_perception_msgs</depend>
   <depend>interbotix_common_modules</depend>
