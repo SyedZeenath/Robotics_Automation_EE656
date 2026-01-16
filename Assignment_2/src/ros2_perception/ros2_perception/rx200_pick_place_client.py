@@ -36,7 +36,7 @@ class MoveItEEClient(Node):
                 
         # Declare parameters to be used from launch file
         self.declare_parameter('start_state_gripper', value=True) 
-        self.send_gr_pose(self.get_parameter('start_state_gripper').value)
+        # self.send_gr_pose(self.get_parameter('start_state_gripper').value)
         
         # ---------------
         # Subscriptions to joint states and perception node
@@ -131,11 +131,16 @@ class MoveItEEClient(Node):
         req.allowed_planning_time = 2.0
         req.num_planning_attempts = 1
 
+        # CRITICAL: use current gripper state
+        req.start_state.is_diff = True
+    
         jc = JointConstraint()
         jc.joint_name = self.gripper_joint
-        jc.position = 0.04 if open else 0.02
-        jc.tolerance_above = 0.01
-        jc.tolerance_below = 0.01
+        
+        jc.position = 0.055 if open else 0.035
+
+        jc.tolerance_above = 0.002
+        jc.tolerance_below = 0.002
         jc.weight = 1.0
 
         goal_constraints = Constraints()
@@ -146,7 +151,14 @@ class MoveItEEClient(Node):
         goal.request = req
         goal.planning_options.plan_only = False
 
+        # DO NOT replan gripper motions
+        goal.planning_options.plan_only = False
+        goal.planning_options.replan = False
 
+        # Slow execution to avoid current spike
+        goal.planning_options.max_velocity_scaling_factor = 0.1
+        goal.planning_options.max_acceleration_scaling_factor = 0.1
+        
         send_future = self._client.send_goal_async(goal)
         send_future.add_done_callback(self._goal_response_cb)
         # Return the send future to allow optional synchronous waiting by the caller
