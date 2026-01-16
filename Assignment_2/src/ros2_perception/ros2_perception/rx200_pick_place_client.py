@@ -32,7 +32,7 @@ class MoveItEEClient(Node):
         self.gripper_joint = 'left_finger'
         
         self.stack_pos = Point(x=0.3, y=-0.2, z=0.005)    # stack position
-        self.block_height = 0.05         # height of each block, used to calculate z coordinate while stacking
+        self.block_height = 0.06       # height of each block, used to calculate z coordinate while stacking
                 
         # Declare parameters to be used from launch file
         self.declare_parameter('start_state_gripper', value=True) 
@@ -50,7 +50,7 @@ class MoveItEEClient(Node):
         self.home_pos()
         self.get_logger().info('RX200 Pick & Place Ready!')
 
-    def send_pose(self, x, y, z, pitch=0.78):
+    def send_pose(self, x, y, z, pitch=0.65):
         pose = PoseStamped()
         pose.header.frame_id = self.base_link
         pose.pose.position.x = x
@@ -70,6 +70,7 @@ class MoveItEEClient(Node):
         roll = 0.0 # Roll is usually zero
         # pitch = 0.0
         q = quaternion_from_euler(roll, pitch, yaw)   # Convert to quaternion
+        self.get_logger().info(f'****************pitch value: {pitch}')
 
         # Construct pose object
         pose.pose.orientation.x = q[0]
@@ -94,7 +95,7 @@ class MoveItEEClient(Node):
         pc.link_name = self.ee_link
         sp = SolidPrimitive() 
         sp.type = SolidPrimitive.SPHERE
-        sp.dimensions = [0.10]
+        sp.dimensions = [0.01]
 
         pc.constraint_region.primitives = [sp]
         pc.constraint_region.primitive_poses = [pose.pose]
@@ -103,9 +104,9 @@ class MoveItEEClient(Node):
         oc.header.frame_id = self.base_link
         oc.link_name = self.ee_link
         oc.orientation = pose.pose.orientation
-        oc.absolute_x_axis_tolerance = 0.5
-        oc.absolute_y_axis_tolerance = 0.5
-        oc.absolute_z_axis_tolerance = 0.9  # Allow full yaw rotation
+        oc.absolute_x_axis_tolerance = 0.1
+        oc.absolute_y_axis_tolerance = 0.1
+        oc.absolute_z_axis_tolerance = 0.2  # Allow full yaw rotation
         oc.weight = 1.0
 
         goal_constraints = Constraints()
@@ -122,7 +123,7 @@ class MoveItEEClient(Node):
 
         send_future = self._client.send_goal_async(goal, feedback_callback=self._feedback_cb)
         send_future.add_done_callback(self._goal_response_cb)
-        return send_future
+        # return send_future
     
     def send_gr_pose(self, open=True):
         req = MotionPlanRequest()
@@ -148,14 +149,14 @@ class MoveItEEClient(Node):
 
         send_future = self._client.send_goal_async(goal)
         send_future.add_done_callback(self._goal_response_cb)
-
         # Return the send future to allow optional synchronous waiting by the caller
         return send_future
 
     def home_pos(self):
         self.get_logger().info('Moving to home position...')
-        self.send_pose(0.2, 0.0, 0.4)   # high pose
-        time.sleep(2.0)
+        self.send_pose(0.2, 0.0, 0.35)   # high pose
+
+        time.sleep(5.0)
         
     # Callbacks 
     def _goal_response_cb(self, future):
@@ -166,6 +167,7 @@ class MoveItEEClient(Node):
         self.get_logger().info('MoveIt goal accepted')
         goal_handle.get_result_async().add_done_callback(self._result_cb)
 
+
     def _feedback_cb(self, feedback_msg):
         state = getattr(feedback_msg.feedback, "state", "<unknown>")
         self.get_logger().info(f'[Feedback] {state}')
@@ -174,6 +176,7 @@ class MoveItEEClient(Node):
         result = future.result().result
         code = getattr(result.error_code, 'val', 'unknown')
         self.get_logger().info(f'[Result] error_code {code}')
+        return code
 
     def blocks_callback(self, msg):
         """
@@ -210,7 +213,7 @@ class MoveItEEClient(Node):
             x, y, z = self._pick_point
             xp, yp, zp = [self.stack_pos.x, self.stack_pos.y, self.stack_pos.z]
             z_stack = zp + self.block_height * self.pick_order.index(pick_color) # calculating height for stacking block one over the other
-            lift_height = 0.12 # fixing it to one step above the object position
+            lift_height = 0.2 # fixing it to one step above the object position
             
             distance = math.sqrt(x**2 + y**2)  # Horizontal distance from base
             # if distance > 0.45 or distance < 0.1 or z < 0.05:
@@ -220,49 +223,56 @@ class MoveItEEClient(Node):
             #     return None
 
 
-            
+            # Open gripper: Before 
+            self.get_logger().info("OPENING GRIPPER")
+            self.send_gr_pose(open=True)
+                
+            time.sleep(7.0)
             # 1. Before Pick: A step before the pick point 
             self.get_logger().info(f"Moving before PICK point")
             if z < 0.01:
                 pitch = 1.5  # Pointing downwards for low z
-            if not self.send_pose(x, y, z + lift_height, pitch):
-                continue  
-            time.sleep(5.0)                      
+            else:
+                pitch = 0.6
+
+            self.send_pose(x, y, z + lift_height, pitch)
+                
+            time.sleep(10.0)                      
             # 2. Move to Pick point
             self.get_logger().info(f"MOVING TO PICK point")
-            if not self.send_pose(x, y, z, pitch):
-                continue
-            time.sleep(5.0)
+            self.send_pose(x, y, z, pitch)
+                
+            time.sleep(10.0)
             # 3. Close gripper: hold the object
             self.get_logger().info("CLOSING GRIPPER")
-            if not self.send_gr_pose(open=False):
-                continue            
+            self.send_gr_pose(open=False)
+                    
             # 4. Lift
             time.sleep(7.0)
             self.get_logger().info(f"LIFTING")
-            if not self.send_pose(x, y, z + lift_height, pitch):
-                continue
-            time.sleep(5.0)
+            self.send_pose(x, y, z + lift_height, pitch)
+                
+            time.sleep(10.0)
             # 5. Go above Place point
             self.get_logger().info(f"Moving ABOVE PLACE point")
-            if not self.send_pose(xp, yp, z_stack, pitch):
-                continue
-            time.sleep(5.0)
+            self.send_pose(xp, yp, z_stack, pitch)
+                
+            time.sleep(10.0)
             # 6. Descend to Place
             self.get_logger().info(f"DESCENDING TO PLACE point")
-            if not self.send_pose(xp, yp, z_stack, pitch):
-                continue
-            time.sleep(5.0)
+            self.send_pose(xp, yp, z_stack, pitch)
+                
+            time.sleep(10.0)
             # 7. Open gripper: release the object
             self.get_logger().info("OPENING GRIPPER")
-            if not self.send_gr_pose(open=True):
-                continue
+            self.send_gr_pose(open=True)
+                
             time.sleep(7.0)
             # 8. Lift: Back to above place            
             self.get_logger().info(f"LIFTING")
-            if not self.send_pose(xp, yp, z_stack + lift_height, pitch):
-                continue
-            time.sleep(5.0)
+            self.send_pose(xp, yp, z_stack + lift_height, pitch)
+                
+            time.sleep(10.0)
             
         self.get_logger().info('Pick & Place cycle complete!')
         self.home_pos()

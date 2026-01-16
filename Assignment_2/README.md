@@ -14,8 +14,8 @@
   The robotic arm begins by moving close to the spot where it needs to pick up the block, pausing just before reaching the *before_pick* in the code. It then glides carefully into the pick position. Once there, the gripper closes, indicating that the pick is complete.
 
   With the block held, the arm lifts it smoothly to the *above_pick* position, making sure it’s safely clear of any obstacles. It then moves to the *above_place* point, positioning itself above where the block will be set down. From there, the arm lowers to the *place_point* and gently opens the gripper, releasing the block into place. the *place_point* here is the *stack_pos* and the z-axis of it is dynamically calculated based on the height of blocks.
-
 - ### Points taken into consideration:
+
 
   - block_height - a constant value which acts as a height of the block, which is used to calculate the stacking position over already placed block.
   - lift_height - a constant value is given to lift the block above the ground. This value is added to the z-value of a point.
@@ -33,25 +33,8 @@ Build and source
 Command to run the application:
 
 ```bash
- ros2 launch robot_launch control_only.launch.py
+ ros2 launch robot_launch control_only.launch.py robot_model:=rx200
 ```
-
-REMOVE THIS ---- Command to run the Rviz('fake' is used here to see the simulation, update to actual or gazebo if needed):
-
-```bash
-ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=rx200 hardware_type:=actual
-```
-
-REMOVE THIS ---- (To be edited later: temp perception command put up here)
-
-```bash
-ros2 launch interbotix_xsarm_perception xsarm_perception.launch.py robot_model:=rx200 use_pointcloud_tuner_gui:=true
-```
-REMOVE THIS ----- Static transform
-```bash
-ros2 run tf2_ros static_transform_publisher 0.09 0.0 0.10 -0.1045 0.0 0.0 0.9945 rx200/wrist_link camera_link
-```
-### Dynamically change the order of picking up the blocks based on color
 
 The below command is used to change the order of picking the blocks. This will help in avoiding to restart all the nodes and just triggers the perception node and publishes the new detected blocks to pick.
 
@@ -76,7 +59,6 @@ ros2 param set /pick_place_perception pick_order "[blue, yellow, red]"
     - robot_launch/
       - Description: Launch file to run the code.
       - Purpose: Can be used to run along with any additional arguments passed through command line.
-
 
 ## Team Members
 

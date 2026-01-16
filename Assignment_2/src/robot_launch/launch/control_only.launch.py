@@ -33,7 +33,7 @@ def generate_launch_description():
         ]),
         launch_arguments={
             'robot_model': 'rx200',
-            'hardware_type': 'fake',
+            'hardware_type': 'actual',
             'rviz_config_file': PathJoinSubstitution([
                 FindPackageShare('ros2_perception'),
                 'config',
@@ -52,7 +52,7 @@ def generate_launch_description():
         output='screen',
         arguments=[
             "0.09", "0.0", "0.10",          # x, y, z translation
-            "0.92", "0.0", "0.0", "0.38",  # quaternion x, y, z, w
+            "0.35", "0.78", "0.0", "2.0",  # quaternion x, y, z, w
             "rx200/wrist_link",              # parent frame
             "camera_link"                    # child frame
         ]
@@ -85,6 +85,7 @@ def generate_launch_description():
         )
     )
 
+
     # ------------------------------
     # Interbotix Perception
     # ------------------------------
@@ -97,8 +98,11 @@ def generate_launch_description():
     initial_reset_launch_arg = LaunchConfiguration('rs_camera_initial_reset')
 
     filter_ns_launch_arg = LaunchConfiguration('filter_ns')
+    filter_params_launch_arg = LaunchConfiguration('filter_params')
     use_pointcloud_tuner_gui_launch_arg = LaunchConfiguration('use_pointcloud_tuner_gui')
+    enable_pipeline_launch_arg = LaunchConfiguration('enable_pipeline')
     cloud_topic_launch_arg = LaunchConfiguration('cloud_topic')
+
 
     rs_camera_launch_include = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -129,6 +133,8 @@ def generate_launch_description():
         ]),
         launch_arguments={
             'filter_ns': filter_ns_launch_arg,
+            'filter_params': filter_params_launch_arg,
+            'enable_pipeline': enable_pipeline_launch_arg,
             'cloud_topic': cloud_topic_launch_arg,
             'use_pointcloud_tuner_gui': use_pointcloud_tuner_gui_launch_arg,
         }.items(),
@@ -143,13 +149,28 @@ def generate_launch_description():
             description='model type of the Interbotix Arm such as `wx200` or `rx150`.',
         )
     )
-    
     declared_arguments.append(
         DeclareLaunchArgument(
             'robot_name',
             default_value=LaunchConfiguration('robot_model'),
             description=(
                 'name of the robot (typically equal to `robot_model`, but could be anything).'
+            ),
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'load_configs',
+            default_value='true',
+            choices=('true', 'false'),
+            description=(
+                'a boolean that specifies whether or not the initial register values (under the '
+                "'motors' heading) in a Motor Config file should be written to the motors; as the "
+                "values being written are stored in each motor's EEPROM (which means the values "
+                'are retained even after a power cycle), this can be set to false after the first '
+                'time using the robot. Setting to false also shortens the node startup time by a '
+                'few seconds and preserves the life of the EEPROM.'
             ),
         )
     )
@@ -210,7 +231,19 @@ def generate_launch_description():
             description='namespace where the pointcloud related nodes and parameters are located.',
         )
     )
-
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'filter_params',
+            default_value=PathJoinSubstitution([
+                FindPackageShare('interbotix_xsarm_perception'),
+                'config',
+                'filter_params.yaml'
+            ]),
+            description=(
+                'file location of the parameters used to tune the perception pipeline filters.'
+            ),
+        )
+    )
     declared_arguments.append(
         DeclareLaunchArgument(
             'use_pointcloud_tuner_gui',
@@ -219,7 +252,19 @@ def generate_launch_description():
             description='whether to show a GUI that a user can use to tune filter parameters.',
         )
     )
-
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'enable_pipeline',
+            default_value=LaunchConfiguration('use_pointcloud_tuner_gui'),
+            choices=('true', 'false'),
+            description=(
+                'whether to enable the perception pipeline filters to run continuously; to save '
+                'computer processing power, this should be set to `false` unless you are actively '
+                'trying to tune the filter parameters; if `false`, the pipeline will only run if '
+                'the `get_cluster_positions` ROS service is called.'
+            ),
+        )
+    )
     declared_arguments.append(
         DeclareLaunchArgument(
             'cloud_topic',
@@ -250,6 +295,36 @@ def generate_launch_description():
             description='the absolute ROS topic name to subscribe to the camera color info.',
         )
     )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'load_transforms',
+            default_value='true',
+            choices=('true', 'false'),
+            description=(
+                'whether or not the static_trans_pub node should publish any poses stored in the '
+                'static_transforms.yaml file at startup; this should only be set to `false` if a '
+                'TF chain already exists connecting the camera and arm base_link frame (typically '
+                'defined in a URDF), and you would rather use that TF chain as opposed to the one '
+                'specified in the static_transforms.yaml file.'
+            ),
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'transform_filepath',
+            default_value=PathJoinSubstitution([
+                FindPackageShare('interbotix_xsarm_perception'),
+                'config',
+                'static_transforms.yaml'
+            ]),
+            description=(
+                'filepath to the static_transforms.yaml file used by the static_trans_pub node; if'
+                ' the file does not exist yet, this is where you would like the file to be '
+                'generated.'
+            ),
+        )
+    )
     
 
 
@@ -261,6 +336,6 @@ def generate_launch_description():
     ld.add_action(moveit_launch)
     ld.add_action(camera_static_tf)
     ld.add_action(rx200_node)
-    ld.add_action(wait_for_rx200_node)
+    ld.add_action(perception_node)
 
     return ld

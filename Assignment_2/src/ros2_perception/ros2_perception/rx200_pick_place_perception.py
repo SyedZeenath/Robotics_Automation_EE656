@@ -57,10 +57,10 @@ class PickPlacePerception(Node):
         # ------------------
         # Detect blocks
         # ------------------
-        self.timer = self.create_timer(5.0, self.detect_blocks)  
-        # self.detect_blocks()    
+        # self.timer = self.create_timer(5.0, self.detect_blocks)  
         self.completed = False
         self.found_colors = set()
+        self.detect_blocks()    
         
         self.get_logger().info(f"Perception Node Initialised!")  
 
@@ -75,9 +75,9 @@ class PickPlacePerception(Node):
                     self.get_logger().info(f"pick_order updated to {param.value}")
                     self._pick_order = param.value
                     self.completed = False
-                    self.timer.cancel()  # Cancel existing timer
-                    self.timer = self.create_timer(5.0, self.detect_blocks)  # Restart timer
-                    
+                    # self.timer.cancel()  # Cancel existing timer
+                    # self.timer = self.create_timer(5.0, self.detect_blocks)  # Restart timer
+                    self.detect_blocks()
                 else:
                     self.get_logger().warn("pick_order must be a list of strings")
         return SetParametersResult(successful=True)
@@ -138,7 +138,7 @@ class PickPlacePerception(Node):
             trans.transform.translation.z = cluster.position.z
             trans.transform.rotation = Quaternion(x=0., y=0., z=0., w=1.)
             # final_trans.append(trans)
-            # cluster_num += 1
+            cluster_num += 1
             self.br.sendTransform(trans)
 
         # create a list of Python dictionaries to return to the user
@@ -153,9 +153,9 @@ class PickPlacePerception(Node):
             # b = clusters[indx].color.b
             # num_points = clusters[indx].num_points
             cluster = {
-                'name': f"cluster_{i+1}",
+                'name': f"cluster_{cluster_num}",
                 'position': [cluster.position.x, cluster.position.y, cluster.position.z],
-                'yaw': yaw,
+                'yaw': 0,
                 'color': [cluster.color.r, cluster.color.g, cluster.color.b],
                 'num_points': cluster.num_points
             }
@@ -192,7 +192,7 @@ class PickPlacePerception(Node):
         r, g, b = cluster_color
         if r > 150 and g < 120 and b < 120:
             return "red"
-        if b > 150 and r < 120 and g < 120:
+        if b > max(r, g) + 20 and b < 120 and r < 100 and g < 100:
             return "blue"
         if r > 150 and g > 150 and b < 120:
             return "yellow"
@@ -208,33 +208,7 @@ class PickPlacePerception(Node):
         # get the transformed pointcloud clusters
         clusters = self.get_cluster_positions()        
         self.get_logger().info(f"Number of clusters detected: {len(clusters)}")
-        # Create a dictionary to hold detected block positions by color
-        
-        # TO work without robot and camera, hardcoding clusters        
-        # clusters = [
-        #     {
-        #         'name': 'cluster_1',
-        #         'position': [0.33589627089328156, 0.04690633350230021, 0.008587103632622717],
-        #         'yaw': 0,
-        #         'color': [203.0, 49.0, 56.0],
-        #         'num_points': 311
-        #     },
-        #     {
-        #         'name': 'cluster_2',
-        #         'position': [0.43589627089328156, 0.04690633350230021, 0.008587103632622717],
-        #         'yaw': 0,
-        #         'color': [255.0, 255.0, 0.0],
-        #         'num_points': 250
-        #     },
-        #     {
-        #         'name': 'cluster_3',
-        #         'position': [0.23589627089328156, 0.04690633350230021, 0.008587103632622717],
-        #         'yaw': 0,
-        #         'color': [49.0, 66.0, 255.0],
-        #         'num_points': 200
-        #     }
-        # ]
-        
+        # Create a dictionary to hold detected block positions by color        
         detected_blocks = {
             'color': {},
             'pick_order': self._pick_order
@@ -264,7 +238,7 @@ class PickPlacePerception(Node):
             self.get_logger().info("All blocks in pick_order detected. Stopping timer.")
             
             # Stop timer
-            self.timer.cancel()
+            # self.timer.cancel()
             self.completed = True
             
 def main():
@@ -281,16 +255,3 @@ def main():
  
 if __name__ == '__main__':
     main()
-
-
-
-#THIS IS JUST FOR UNDERSTANDING PURPOSES
-#  response:
-
-
-# Clusters: '[interbotix_perception_msgs.msg.ClusterInfo(frame_id='camera_depth_optical_frame', position=geometry_msgs.msg.Point(x=0.045460764318704605, y=-0.10489796102046967, z=0.47484132647514343), yaw=0.0, color=std_msgs.msg.ColorRGBA(r=225.0, g=177.0, b=101.0, a=0.0), min_z_point=geometry_msgs.msg.Point(x=0.029922788962721825, y=-0.10594867914915085, z=0.46627557277679443), num_points=259), interbotix_perception_msgs.msg.ClusterInfo(frame_id='camera_depth_optical_frame', position=geometry_msgs.msg.Point(x=-0.021947862580418587, y=-0.12682467699050903, z=0.48142504692077637), yaw=0.0, color=std_msgs.msg.ColorRGBA(r=192.0, g=38.0, b=42.0, a=0.0), min_z_point=geometry_msgs.msg.Point(x=-0.0340929739177227, y=-0.12213777750730515, z=0.4699997901916504), num_points=196)]'
-
-
-# ublished detected blocks: std_msgs.msg.String(data='{"color": {"red": [0.3186356141327514, -0.12939683605952249, -0.00962927531021418]}, "pick_order": ["red", "blue", "yellow"]}')
-
-# Received detected blocks data: {'color': {'red': [0.33589627089328156, 0.04690633350230021, 0.008587103632622717]}, 'pick_order': ['red', 'blue', 'yellow']}
