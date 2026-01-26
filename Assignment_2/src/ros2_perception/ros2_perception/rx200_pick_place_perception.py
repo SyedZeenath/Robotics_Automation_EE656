@@ -93,7 +93,7 @@ class PickPlacePerception(Node):
         
         if num_clusters == 0:
             self.get_logger().warning('No clusters found...')
-            return False, []
+            return []
         self.get_logger().info(f'Clusters ===== {clusters} ') 
           
         # Get the cluster frame id from the first cluster
@@ -206,7 +206,11 @@ class PickPlacePerception(Node):
         if self.completed:
             return
         # get the transformed pointcloud clusters
-        clusters = self.get_cluster_positions()        
+        clusters = self.get_cluster_positions()     
+        self.get_logger().info(f"Clusters received for processing: {clusters}")
+        if len(clusters) == 0:
+            self.get_logger().info("No clusters to process.")
+            return   
         self.get_logger().info(f"Number of clusters detected: {len(clusters)}")
         # Create a dictionary to hold detected block positions by color        
         detected_blocks = {
