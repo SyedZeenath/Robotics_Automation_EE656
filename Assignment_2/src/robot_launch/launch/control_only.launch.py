@@ -5,8 +5,8 @@ from launch_ros.substitutions import FindPackageShare
 from launch.substitutions import PathJoinSubstitution, Command, LaunchConfiguration
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.actions import RegisterEventHandler
-from launch.event_handlers import OnProcessStart
+from launch.actions import RegisterEventHandler, ExecuteProcess
+from launch.event_handlers import OnProcessStart, OnProcessExit, OnExecutionComplete
 from interbotix_xs_modules.xs_launch import (
     declare_interbotix_xsarm_robot_description_launch_arguments,
 )
@@ -51,8 +51,8 @@ def generate_launch_description():
         name='camera_static_tf',
         output='screen',
         arguments=[
-            "0.09", "0.0", "0.10",          # x, y, z translation
-            "0.35", "0.78", "0.0", "2.0",  # quaternion x, y, z, w
+            "0.20", "-0.05", "0.15",          # x, y, z translation
+            "-0.025", "0.9", "0.2", "2.0",  # quaternion x, y, z, w
             "rx200/wrist_link",              # parent frame
             "camera_link"                    # child frame
         ]
@@ -84,7 +84,6 @@ def generate_launch_description():
             on_start=[perception_node]
         )
     )
-
 
     # ------------------------------
     # Interbotix Perception
@@ -336,6 +335,7 @@ def generate_launch_description():
     ld.add_action(moveit_launch)
     ld.add_action(camera_static_tf)
     ld.add_action(rx200_node)
-    ld.add_action(perception_node)
+    ld.add_action(wait_for_rx200_node)
+    # ld.add_action(perception_node)
 
     return ld

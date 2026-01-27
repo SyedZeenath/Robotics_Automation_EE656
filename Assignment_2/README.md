@@ -26,14 +26,14 @@
 Build and source
 
 ```bash
-   colcon build
-   source install/setup.bash
+colcon build
+source install/setup.bash
 ```
 
 Command to run the application:
 
 ```bash
- ros2 launch robot_launch control_only.launch.py robot_model:=rx200
+ros2 launch robot_launch control_only.launch.py robot_model:=rx200
 ```
 
 The below command is used to change the order of picking the blocks. This will help in avoiding to restart all the nodes and just triggers the perception node and publishes the new detected blocks to pick.
