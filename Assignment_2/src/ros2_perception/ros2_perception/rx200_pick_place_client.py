@@ -48,12 +48,13 @@ class MoveItEEClient(Node):
         # ---------------
         self.current_joint_state = None
         self.create_subscription(JointState, '/rx200/joint_states', self.joint_state_cb, 10) # Subscribe to joint states
-        self.create_subscription(String, '/detected_blocks', self.blocks_callback, 10) 
-        self.detected_blocks = {}
+        
         self.max_retry = 0
         # Go to home position
+        self.waiting_for_home = True
         self.home_pos()
-        self.publish_ready()
+        self.create_subscription(String, '/detected_blocks', self.blocks_callback, 10) 
+        self.detected_blocks = {}
         self.get_logger().info('RX200 Pick & Place Ready!')
     
     def publish_ready(self):
@@ -61,6 +62,7 @@ class MoveItEEClient(Node):
         msg.data = True
         self.ready_pub.publish(msg)
         self.get_logger().info('Ready for perception.')
+        # time.sleep(10.0)
 
     def wait_move_group_server(self):
         if not self._client.wait_for_server(timeout_sec=1.0):
@@ -224,8 +226,16 @@ class MoveItEEClient(Node):
                         self.last_pitch
                     )
                 self.max_retry += 1
+                
         else:
-            self.get_logger().info("Move completed successfully")
+            if self.waiting_for_home:
+                self.waiting_for_home = False
+                self.get_logger().info("Home position reached.")
+                self.publish_ready()
+                return
+            # self.ready = True
+            # self.get_logger().info("Move completed successfully")
+            # self.publish_ready()
 
     def blocks_callback(self, msg):
         """

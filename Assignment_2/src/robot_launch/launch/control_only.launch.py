@@ -335,7 +335,7 @@ def generate_launch_description():
     ld.add_action(moveit_launch)
     ld.add_action(camera_static_tf)
     ld.add_action(rx200_node)
-    ld.add_action(wait_for_rx200_node)
-    # ld.add_action(perception_node)
+    # ld.add_action(wait_for_rx200_node)
+    ld.add_action(perception_node)
 
     return ld

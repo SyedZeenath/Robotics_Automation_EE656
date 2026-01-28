@@ -22,6 +22,13 @@ class PickPlacePerception(Node):
 
         # Publisher
         self.pub = self.create_publisher(String, '/detected_blocks', 10)
+        self.arm_ready = False
+        self.create_subscription(
+            Bool,
+            '/ready_for_perception',
+            self.ready_callback,
+            10
+        )
 
         # Parameters
         self.declare_parameter('pick_order', value=['red', 'blue', 'yellow'])
@@ -47,18 +54,26 @@ class PickPlacePerception(Node):
 
         self.get_logger().info("PickPlacePerception Node Initialized")
 
+    def ready_callback(self, msg):
+        # self.arm_ready = msg.data
+        if msg.data and not self.arm_ready:
+            self.arm_ready = True
+            self.get_logger().info("Arm ready signal received.")
     # -----------------------------
     # Parameter callback
     # -----------------------------
     def parameter_callback(self, params):
+        if not self.arm_ready:
+                self.get_logger().warn(
+                    "Ignoring parameter change: arm not at home yet."
+                )
+                return SetParametersResult(successful=False)
+
         for param in params:
             if param.name == 'pick_order':
-                if isinstance(param.value, list) and all(isinstance(i, str) for i in param.value):
-                    self.get_logger().info(f"pick_order updated to {param.value}")
-                    self._pick_order = param.value
-                    self.detect_blocks_requested = True
-                else:
-                    self.get_logger().warn("pick_order must be a list of strings")
+                self._pick_order = param.value
+                self.detect_blocks_requested = True
+
         return SetParametersResult(successful=True)
 
     # -----------------------------
