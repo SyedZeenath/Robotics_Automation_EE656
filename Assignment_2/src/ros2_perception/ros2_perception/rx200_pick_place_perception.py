@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from rcl_interfaces.msg import SetParametersResult
 from geometry_msgs.msg import TransformStamped, Quaternion
 from interbotix_perception_msgs.srv import ClusterInfoArray
@@ -35,30 +35,34 @@ class PickPlacePerception(Node):
         self._pick_order = self.get_parameter('pick_order').value
         self.add_on_set_parameters_callback(self.parameter_callback)
 
-        # TF broadcaster/listener
-        self.br = tf2_ros.TransformBroadcaster(self)
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
-
-        # Service client
-        self.srv_get_cluster_positions = self.create_client(ClusterInfoArray, '/pc_filter/get_cluster_positions')
-        while not self.srv_get_cluster_positions.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info("Waiting for cluster service...")
-
-        # Async state
         self.detect_blocks_requested = False
-        self.completed = False
+        
 
         # Timer to process requests
-        self.timer = self.create_timer(0.1, self.process_requests)
+        # self.timer = self.create_timer(0.1, self.process_requests)
 
-        self.get_logger().info("PickPlacePerception Node Initialized")
 
     def ready_callback(self, msg):
         # self.arm_ready = msg.data
         if msg.data and not self.arm_ready:
             self.arm_ready = True
             self.get_logger().info("Arm ready signal received.")
+            # TF broadcaster/listener
+            self.br = tf2_ros.TransformBroadcaster(self)
+            self.tf_buffer = tf2_ros.Buffer()
+            self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+
+            # Service client
+            self.srv_get_cluster_positions = self.create_client(ClusterInfoArray, '/pc_filter/get_cluster_positions')
+            while not self.srv_get_cluster_positions.wait_for_service(timeout_sec=1.0):
+                self.get_logger().info("Waiting for cluster service...")
+
+            # Async state
+            self.detect_blocks_requested = True
+
+            self.process_requests()
+
+            self.get_logger().info("PickPlacePerception Node Initialized")
     # -----------------------------
     # Parameter callback
     # -----------------------------
@@ -73,6 +77,7 @@ class PickPlacePerception(Node):
             if param.name == 'pick_order':
                 self._pick_order = param.value
                 self.detect_blocks_requested = True
+                self.process_requests()
 
         return SetParametersResult(successful=True)
 

@@ -272,7 +272,7 @@ class MoveItEEClient(Node):
             x, y, z = self._pick_point
             xp, yp, zp = [self.stack_pos.x, self.stack_pos.y, self.stack_pos.z]
             z_stack = zp + self.block_height * self.pick_order.index(pick_color) # calculating height for stacking block one over the other
-            lift_height = 0.05 # fixing it to one step above the object position
+            lift_height = 0.06 # fixing it to one step above the object position
             
             distance = math.sqrt(x**2 + y**2)  # Horizontal distance from base
             # if distance > 0.45 or distance < 0.1 or z < 0.05:
@@ -319,7 +319,7 @@ class MoveItEEClient(Node):
             time.sleep(5.0)
             # 6. Descend to Place
             self.get_logger().info(f"DESCENDING TO PLACE point")
-            self.send_pose(xp, yp, z_stack+0.01, pitch)
+            self.send_pose(xp, yp, z_stack, pitch)
                 
             time.sleep(5.0)
             # 7. Open gripper: release the object
