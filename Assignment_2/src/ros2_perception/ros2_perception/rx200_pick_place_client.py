@@ -72,7 +72,7 @@ class MoveItEEClient(Node):
             return False
         return True
     
-    def send_pose(self, x, y, z, pitch=1.5):
+    def send_pose(self, x, y, z, pitch=0.65):
         if not self.wait_move_group_server():
             return
 
