@@ -36,7 +36,9 @@ class MoveItEEClient(Node):
         self.base_link = 'rx200/base_link'
         self.gripper_joint = 'left_finger'
         
-        self.stack_pos = Point(x=0.3, y=-0.2, z=0.01)    # stack position
+        self.stack_pos_red = Point(x=0.3, y=-0.2, z=0.01)    # stack position for red blocks
+        self.stack_pos_blue = Point(x=0.3, y=-0.1, z=0.01)   # stack position for blue blocks
+        self.stack_pos_yellow = Point(x=0.3, y=-0.3, z=0.01)  # stack position for yellow blocks
         self.block_height = 0.06       # height of each block, used to calculate z coordinate while stacking
         
         # ---------------
@@ -257,6 +259,15 @@ class MoveItEEClient(Node):
             # initialize pick & place points
             # ------------------
             x, y, z = self._pick_point
+            if pick_color == 'red':
+                self.stack_pos = self.stack_pos_red
+            elif pick_color == 'blue':
+                self.stack_pos = self.stack_pos_blue
+            elif pick_color == 'yellow':
+                self.stack_pos = self.stack_pos_yellow
+            else:
+                self.get_logger().warning(f"Unknown color {pick_color}, skipping.")
+                continue
             xp, yp, zp = [self.stack_pos.x, self.stack_pos.y, self.stack_pos.z]
             z_stack = zp + self.block_height * self.pick_order.index(pick_color) # calculating height for stacking block one over the other
             lift_height = 0.06 # fixing it to one step above the object position
