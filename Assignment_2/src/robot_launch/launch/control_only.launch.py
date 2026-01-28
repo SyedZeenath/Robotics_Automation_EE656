@@ -77,13 +77,6 @@ def generate_launch_description():
         name='pick_place_perception',
         output='screen'
     )
-    
-    wait_for_rx200_node = RegisterEventHandler(
-        OnProcessStart(
-            target_action=rx200_node,
-            on_start=[perception_node]
-        )
-    )
 
     # ------------------------------
     # Interbotix Perception

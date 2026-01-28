@@ -23,30 +23,24 @@ class PickPlacePerception(Node):
         # Publisher
         self.pub = self.create_publisher(String, '/detected_blocks', 10)
         self.arm_ready = False
-        self.create_subscription(
-            Bool,
-            '/ready_for_perception',
-            self.ready_callback,
-            10
-        )
-
-        # Parameters
+        self.create_subscription(Bool, '/ready_for_perception', self.ready_callback, 10)
+        
+        #---------------
+        # Parameters used for pick and place
+        # 1. pick_order: order in which colors are to be picked
+        #---------------
         self.declare_parameter('pick_order', value=['red', 'blue', 'yellow'])
         self._pick_order = self.get_parameter('pick_order').value
+
         self.add_on_set_parameters_callback(self.parameter_callback)
 
         self.detect_blocks_requested = False
-        
-
-        # Timer to process requests
-        # self.timer = self.create_timer(0.1, self.process_requests)
-
 
     def ready_callback(self, msg):
-        # self.arm_ready = msg.data
         if msg.data and not self.arm_ready:
             self.arm_ready = True
             self.get_logger().info("Arm ready signal received.")
+
             # TF broadcaster/listener
             self.br = tf2_ros.TransformBroadcaster(self)
             self.tf_buffer = tf2_ros.Buffer()
@@ -63,6 +57,7 @@ class PickPlacePerception(Node):
             self.process_requests()
 
             self.get_logger().info("PickPlacePerception Node Initialized")
+
     # -----------------------------
     # Parameter callback
     # -----------------------------
@@ -200,9 +195,6 @@ class PickPlacePerception(Node):
         self.get_logger().error(f"TF lookup failed {source}->{target} after {attempts} attempts")
         return None
 
-# -----------------------------
-# Main
-# -----------------------------
 def main():
     rclpy.init()
     node = PickPlacePerception()
