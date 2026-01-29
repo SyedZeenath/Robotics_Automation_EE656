@@ -36,8 +36,8 @@ class MoveItEEClient(Node):
         self.base_link = 'rx200/base_link'
         self.gripper_joint = 'left_finger'
         
-        self.stack_pos = Point(x=0.3, y=-0.2, z=0.01)    # stack position
-        self.block_height = 0.06       # height of each block, used to calculate z coordinate while stacking
+        self.stack_pos = Point(x=0.2, y=-0.2, z=0.03)    # stack position
+        self.block_height = 0.05       # height of each block, used to calculate z coordinate while stacking
         
         # ---------------
         # Subscriptions to joint states
@@ -254,13 +254,16 @@ class MoveItEEClient(Node):
             self.get_logger().info(f"Detected {pick_color} block at {self._pick_point}")
             
             # ------------------
-            # initialize pick & place points
+            # initialize pick & place points 
             # ------------------
             x, y, z = self._pick_point
             xp, yp, zp = [self.stack_pos.x, self.stack_pos.y, self.stack_pos.z]
-            z_stack = zp + self.block_height * self.pick_order.index(pick_color) # calculating height for stacking block one over the other
+            if self.pick_order.index(pick_color) == 0:
+                z_stack = zp
+            else:  
+                z_stack = zp + self.block_height # calculating height for stacking block one over the other
             lift_height = 0.06 # fixing it to one step above the object position
-            pitch = 1.5  # Pointing downwards 
+            pitch = 1.57  # Pointing downwards 
 
             #----------------
             # Pick & Place Sequence
@@ -274,11 +277,11 @@ class MoveItEEClient(Node):
             # 1. Before Pick: A step before the pick point 
             self.get_logger().info(f"Moving before PICK point")
             self.send_pose(x, y, z + lift_height, pitch)
-            time.sleep(10.0)  
+            time.sleep(5.0)  
 
             # 2. Move to Pick point
             self.get_logger().info(f"MOVING TO PICK point")
-            self.send_pose(x, y, z+0.02, pitch)
+            self.send_pose(x, y, z, pitch)
             time.sleep(5.0)
 
             # 3. Close gripper: hold the object

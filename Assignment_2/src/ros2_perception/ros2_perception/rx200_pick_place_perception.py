@@ -143,6 +143,7 @@ class PickPlacePerception(Node):
             t_msg.transform.rotation = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
             self.br.sendTransform(t_msg)
 
+            pos_base[2] = max(pos_base[2], 0.03)  # ensure minimum height
             # Save final cluster info
             final_clusters.append({
                 'name': f'cluster_{i}',
@@ -174,12 +175,29 @@ class PickPlacePerception(Node):
     # -----------------------------
     def extract_color_names(self, cluster_color):
         r, g, b = cluster_color
-        if r > 150 and g < 120 and b < 120:
-            return "red"
-        if b > max(r, g) + 20 and b < 120 and r < 100 and g < 100:
+
+        total = r + g + b
+        if total < 60:  # too dark / noise
+            return "unknown"
+
+        r_n = r / total
+        g_n = g / total
+        b_n = b / total
+
+        # BLUE: dominant blue
+        if b_n > 0.42 and b > r and b > g:
             return "blue"
-        if r > 150 and g > 150 and b < 120:
+
+        # RED: red clearly dominates green
+        if r_n > 0.45 and g < 100 and r > b:
+            return "red"
+
+        # YELLOW: red and green both strong, close to each other
+        if (r_n > 0.2 and g > 100 and
+            abs(r - g) < 50 and
+            b_n < 0.25):
             return "yellow"
+
         return "unknown"
 
     # -----------------------------
