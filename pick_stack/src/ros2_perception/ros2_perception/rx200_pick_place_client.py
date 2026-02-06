@@ -36,7 +36,9 @@ class MoveItEEClient(Node):
         self.base_link = 'rx200/base_link'
         self.gripper_joint = 'left_finger'
         
-        self.stack_pos = Point(x=0.3, y=-0.2, z=0.01)    # stack position
+        self.place_pos_red = Point(x=0.3, y=-0.2, z=0.03)    # stack position for red blocks
+        self.place_pos_blue = Point(x=0.3, y=0.2, z=0.03)   # stack position for blue blocks
+        self.place_pos_yellow = Point(x=0.2, y=0.1, z=0.03)  # stack position for yellow blocks
         self.block_height = 0.06       # height of each block, used to calculate z coordinate while stacking
         
         # ---------------
@@ -257,10 +259,18 @@ class MoveItEEClient(Node):
             # initialize pick & place points
             # ------------------
             x, y, z = self._pick_point
-            xp, yp, zp = [self.stack_pos.x, self.stack_pos.y, self.stack_pos.z]
-            z_stack = zp + self.block_height * self.pick_order.index(pick_color) # calculating height for stacking block one over the other
+            if pick_color == 'red':
+                self.place_pos = self.place_pos_red
+            elif pick_color == 'blue':
+                self.place_pos = self.place_pos_blue
+            elif pick_color == 'yellow':
+                self.place_pos = self.place_pos_yellow
+            else:
+                self.get_logger().warning(f"Unknown color {pick_color}, skipping.")
+                continue
+            xp, yp, zp = [self.place_pos.x, self.place_pos.y, self.place_pos.z]
             lift_height = 0.06 # fixing it to one step above the object position
-            pitch = 1.5  # Pointing downwards 
+            pitch = 1.57  # Pointing downwards 
 
             #----------------
             # Pick & Place Sequence
@@ -274,11 +284,11 @@ class MoveItEEClient(Node):
             # 1. Before Pick: A step before the pick point 
             self.get_logger().info(f"Moving before PICK point")
             self.send_pose(x, y, z + lift_height, pitch)
-            time.sleep(10.0)  
+            time.sleep(5.0)  
 
             # 2. Move to Pick point
             self.get_logger().info(f"MOVING TO PICK point")
-            self.send_pose(x, y, z+0.02, pitch)
+            self.send_pose(x, y, z, pitch)
             time.sleep(5.0)
 
             # 3. Close gripper: hold the object
@@ -293,12 +303,12 @@ class MoveItEEClient(Node):
 
             # 5. Go above Place point
             self.get_logger().info(f"Moving ABOVE PLACE point")
-            self.send_pose(xp, yp, z_stack + lift_height, pitch)                
+            self.send_pose(xp, yp, zp + lift_height, pitch)                
             time.sleep(5.0)
 
             # 6. Descend to Place
             self.get_logger().info(f"DESCENDING TO PLACE point")
-            self.send_pose(xp, yp, z_stack, pitch)                
+            self.send_pose(xp, yp, zp, pitch)                
             time.sleep(5.0)
 
             # 7. Open gripper: release the object
@@ -308,7 +318,7 @@ class MoveItEEClient(Node):
 
             # 8. Lift: Back to above place            
             self.get_logger().info(f"LIFTING")
-            self.send_pose(xp, yp, z_stack + lift_height, pitch)                
+            self.send_pose(xp, yp, zp + lift_height, pitch)                
             time.sleep(5.0)
             
         self.get_logger().info('Pick & Place cycle complete!')
