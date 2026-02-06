@@ -2,7 +2,7 @@
 
 - Description:
 
-  Assignment demonstrating a ROS2 manipulation (pick & place). The idea here is, the arm picks an object from a predefined position, moves in a straight-line trajectory and places the object in another predefined position. The pick and place positions are passed through the params file, which can be modified to any positions of choice.
+  Code demonstrating a ROS2 manipulation (pick & place). The idea here is, the arm picks an object from a predefined position, moves in a straight-line trajectory and places the object in another predefined position. The pick and place positions are passed through the params file, which can be modified to any positions of choice.
 - Sequence followed:
 
   The robotic arm begins by moving close to the spot where it needs to pick up the object, pausing just before reaching it the *before_pick* in the code. It then glides carefully into the pick position. Once there, the gripper closes, indicating that the pick is complete.
@@ -20,7 +20,7 @@
   - pitch is included based on the euclidean distance of arm from the base, if distance is too less(which is 0.2) then the arm points downwards, to avoid collision to the base.
   - yaw is the tan-1(y/x) gives angle between x-axis and line joining origin to point (x,y), stating how much the end-effector should rotate to face the point (x,y)
 
-## How to run(Make sure you are in folder Assignment_1_group_5):
+## How to run(Make sure you are in folder Robotics_Projects):
 
 Build and source
 
@@ -35,7 +35,7 @@ Command to run the application:
 ros2 launch robot_launch control_only.launch.py params_file:=$(pwd)/src/ros2_manipulation/params/rx200_params.yaml
 ```
 
-Note: params_file is the location where the params file is located. Either give a full path or go to the 'Assignment_1_group_5' folder and copy the command as shown above
+Note: params_file is the location where the params file is located. Either give a full path or go to the 'Robotics_Projects' folder and copy the command as shown above
 
 Command to run the Rviz('fake' is used here to see the simulation, update to actual or gazebo if needed):
 
@@ -45,10 +45,10 @@ ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=rx200 ha
 
 ## Folder Structure:
 
-- Assignment-1:
+- pick_place:
   - src/
     - ros2_manipulation/ros2_manipulation
-      - Description: Assignment demonstrating a ROS2 manipulation (pick & place) - has two nodes, one for publishing the sequence along with timer(Command Node) and one where the movement of arm updates(client Node).
+      - Description: COde demonstrating a ROS2 manipulation (pick & place) - has two nodes, one for publishing the sequence along with timer(Command Node) and one where the movement of arm updates(client Node).
         - rx200_pick_place_command.py(Command Node):
           - Description: This is a node that publishes the state the arm has to move (commands) every 5 seconds to the Client Node
         - rx200_pick_place_client.py(client Node):
@@ -70,8 +70,3 @@ This file takes four parameters.
 
 The points can be modified and just run the command again. A rebuild of the code is not required for every change.
 
-## Team Members
-
-- Zeenath Ara Syed
-- Deepika Nayudu
-- Katie Brugha
