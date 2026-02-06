@@ -49,6 +49,26 @@ Project root
         - Description: Launch file to run the code.
         - Purpose: Can be used to run along with any additional arguments passed through command line.
 
+- labSample_sorting:
+  - Description: Similar code as above, just changed few final positions, this project basically indicates a real-world use case in sorting blood samples in a laboratory, titled: A Modular Robotic System for Colour-Based Laboratory Sample Sorting
+  - Layout:
+    - src/
+      - ros2_perception/ros2_perception
+        - Description: Code demonstrating the pick & place three colored samples - has two nodes, one for detecting the samples publishing their color&positions(perception Node) and other one where the movement of arm updates(client Node).
+        - rx200_pick_place_perception.py(perception Node):
+          - Description: This is a node that publishes the color and position of the samples to the Client Node
+        - rx200_pick_place_client.py(client Node):
+          - Description: Apart from the code done in the lab(initializing and defining constraints), this node subscribes to the perception node. A series of sequence as done in the pick_place has been used here to move the arms.
+      - ros2_perception/config/rx200_pick_place.rviz
+        - The custom rviz file which has all the nodes of perception and motion planning to visualize in rviz.
+      - robot_launch/
+        - Description: Launch file to run the code.
+        - Purpose: Can be used to run along with any additional arguments passed through command line.
+    - Video_Report:
+      - Report.pdf: This is a report created by the team on the use-case of color-based laboratory sample sorting.
+      - Video: A 2 mins video showcasing the use-case and small demo of the implementation.
+
+
 Notes
 
 - Each folder should include a small README describing how to run its demos (dependencies, ros2 commands, launch usage).
