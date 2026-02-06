@@ -2,12 +2,12 @@
 
 - ### Description:
 
-  Assignment demonstrating picking of three colored blocks and stacking one over the other at a pre-defined position. The pick order is passed as parameters. The idea here is, the arm reads the pick order of the blocks, it then detects the blocks through the camera connected. Based on the order, the arm picks each block and places them one over another in a predefined position. The pickorder is passed through the params file, which can be modified to any order of choice.
+  Code demonstrating picking of three colored blocks and stacking one over the other at a pre-defined position. The pick order is passed as parameters. The idea here is, the arm reads the pick order of the blocks, it then detects the blocks through the camera connected. Based on the order, the arm picks each block and places them one over another in a predefined position. The pickorder is passed through the params file, which can be modified to any order of choice.
 - ### Sequence followed:
 
   There are two nodes running: one for perception and one for pick and place. The perception node calls the */pc_filter/get_cluster_positions* service to get the color and position of each block. After that, the block positions are transformed into the correct reference frame, cleaned up, and published on the */detected_blocks* topic.
 
-  The pick-and-place node subscribes to this topic so it can read the block positions and colors. Using the given pick order, it then controls the arm to carry out the pick-and-place steps. The motion sequence is the same one used in Assignment 1 moveIt's move_action client.
+  The pick-and-place node subscribes to this topic so it can read the block positions and colors. Using the given pick order, it then controls the arm to carry out the pick-and-place steps. The motion sequence is the same one used in pick_place moveIt's move_action client.
 
   Sequence(Brief):
 
@@ -21,7 +21,7 @@
   - lift_height - a constant value is given to lift the block above the ground. This value is added to the z-value of a point.
   - stack_pos - a constant value indicating the position where the blocks need to be stacked. It is currently pre-defined in the code and not provided through params.
 
-## How to run(Make sure you are in folder Assignment_2):
+## How to run(Make sure you are in folder Robotics_Projects):
 
 Build and source
 
@@ -46,22 +46,17 @@ ros2 param set /pick_place_perception pick_order "[blue, yellow, red]"
 
 ## Folder Structure:
 
-- Assignment-2:
+- pick_stack:
   - src/
     - ros2_perception/ros2_perception
-      - Description: Assignment demonstrating the pick & stack three colored blocks - has two nodes, one for detecting the blocks publishing their color&positions(perception Node) and other one where the movement of arm updates(client Node).
+      - Description: Code demonstrating the pick & stack three colored blocks - has two nodes, one for detecting the blocks publishing their color & positions(perception Node) and other one where the movement of arm updates(client Node).
       - rx200_pick_place_perception.py(perception Node):
         - Description: This is a node that publishes the color and position of the blocks to the Client Node
       - rx200_pick_place_client.py(client Node):
-        - Description: Apart from the code done in the lab(initializing and defining constraints), this node subscribes to the perception node. A series of sequence as done in the assignment_1 has been used here to move the arms.
+        - Description: Apart from the code done in the lab(initializing and defining constraints), this node subscribes to the perception node. A series of sequence as done in the pick_place has been used here to move the arms.
     - ros2_perception/config/rx200_pick_place.rviz
       - The custom rviz file which has all the nodes of perception and motion planning to visualize in rviz.
     - robot_launch/
       - Description: Launch file to run the code.
       - Purpose: Can be used to run along with any additional arguments passed through command line.
 
-## Team Members
-
-- Zeenath Ara Syed
-- Deepika Nayudu
-- Katie Brugha
